@@ -190,7 +190,8 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 		log.Fatal("Errored while querying for relevant new pages with error: ", query.Err())
 	}
 
-	if !rfcCat {
+	// If it uses a runfile, and there actually is something to write
+	if !rfcCat && len(firstItem) > 0 {
 		// Store the done timestamp and page id into the runfile for next use
 		err := ioutil.WriteFile(slugify.Marshal(category)+".frsrunfile", []byte(firstItem), 0644)
 		if err != nil {
