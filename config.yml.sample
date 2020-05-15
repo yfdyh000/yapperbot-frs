@@ -1,0 +1,5 @@
+frspageid: # Page ID of the WP:FRS page
+sentcountpageid: # Page ID of the page used to store the SentCount JSON
+gaguidelinesheaderpageid: # Page ID of the page containing the GA guidelines header, that maps the topics to subtopics
+apiendpoint: # An API endpoint, for instance, https://test.wikipedia.org/w/api.php
+botusername: # The full bot username - e.g. Example@Example
