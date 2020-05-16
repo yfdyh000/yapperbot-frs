@@ -82,8 +82,10 @@ func GetListHeaders() []string {
 // GetUsersFromHeaders takes a list of headers and an integer number of users n, and returns a randomly selected portion of the users
 // from each header, with each header of size n. It won't pick the same user twice.
 func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSUser) {
-	headerusers = make(map[string][]FRSUser)
-	pickedNumbers := map[int]bool{}
+	// maps header to array of users
+	headerusers = map[string][]FRSUser{}
+	// maps user to true if used - used for o(1) lookups of the user to check if already included
+	pickedusers := map[string]bool{}
 
 	for _, header := range headers {
 		users := make([]FRSUser, 0, n)
@@ -95,27 +97,27 @@ func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSU
 			if len(list[header]) <= n {
 				// very small list, or very large n
 				// just give the entire list after checking for user limits
+				user = list[header][i]
 
 				if i >= len(list[header]) {
 					// if we've looped over the entire length of the header list, break out to the main header loop
 					break
-				} else if pickedNumbers[i] {
+				} else if pickedusers[user.Username] {
 					// if the user is already included, skip it and increment i here - we're not randomly selecting, we don't have that many users to choose from
 					i++
 					continue
 				}
 
-				pickedNumbers[i] = true
-				user = list[header][i]
+				pickedusers[user.Username] = true
 			} else {
 				selected := randomGenerator.Intn(len(list[header]))
-				if pickedNumbers[selected] {
-					// the number has already been picked, do it again without incrementing i
+				user := list[header][selected]
+				if pickedusers[user.Username] {
+					// the user has already been picked, do it again without incrementing i
 					continue
 				}
-				// number not yet picked, now we add the number to the picked list and see if the user is valid
-				pickedNumbers[selected] = true
-				user = list[header][selected]
+				// user not yet picked, now we add the user to the picked list and then see if the user is valid
+				pickedusers[user.Username] = true
 			}
 
 			if user.GetCount(header) >= user.Limit {
