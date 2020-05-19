@@ -21,10 +21,10 @@ package ga
 import (
 	"log"
 	"regexp"
-	"yapperbot-frs/src/wikinteract"
 	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // gaTopics is a map in the form {"subtopic": "topic"}
@@ -48,7 +48,7 @@ func init() {
 
 // FetchGATopics takes a mwclient and fetches the latest GA topics from the Good Article noms page.
 func FetchGATopics(w *mwclient.Client) {
-	text, err := wikinteract.FetchWikitext(w, gaGuidelinesHeaderPageID)
+	text, err := ybtools.FetchWikitext(w, gaGuidelinesHeaderPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch Good Articles topics with error ", err)
 	}

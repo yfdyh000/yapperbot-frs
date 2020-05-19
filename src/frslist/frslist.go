@@ -26,12 +26,12 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"yapperbot-frs/src/wikinteract"
 	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
 	"github.com/antonholmquist/jason"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // list is the overall list of FRSUsers mapped to their headers.
@@ -144,7 +144,7 @@ func FinishRun(w *mwclient.Client) {
 }
 
 func populateFrsList(w *mwclient.Client) {
-	text, err := wikinteract.FetchWikitext(w, frsPageID)
+	text, err := ybtools.FetchWikitext(w, frsPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch and parse FRS page with error ", err)
 	}
@@ -177,7 +177,7 @@ func populateSentCount(w *mwclient.Client) {
 	// {"month": "2020-05", "headers": {"category": {"username": 8}}}
 	// where username had been sent 8 messages in the month of May 2020 and the header "category".
 
-	storedJSON, err := wikinteract.FetchWikitext(w, sentCountPageID)
+	storedJSON, err := ybtools.FetchWikitext(w, sentCountPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch sent count page with error ", err)
 	}

@@ -22,17 +22,17 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"yapperbot-frs/src/wikinteract"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // MarkRfcsDone takes a mwclient, a pageid and a series of RfC objects,
 // and marks the RfCs with the "frsdone" tag.
 func MarkRfcsDone(w *mwclient.Client, pageID string, rfcsDone []RfC) {
 	// We want to fetch the content again here, to try and prevent edit conflicts as much as possible
-	content, err := wikinteract.FetchWikitext(w, pageID)
+	content, err := ybtools.FetchWikitext(w, pageID)
 	if err != nil {
 		log.Fatal("Couldn't get the RfC page again to mark as done - error was ", err)
 	}

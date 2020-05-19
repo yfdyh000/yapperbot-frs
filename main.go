@@ -33,6 +33,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
+	"github.com/mashedkeyboard/ybtools"
 	"github.com/metal3d/go-slugify"
 )
 
@@ -105,14 +106,14 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 	var firstItem string = ""
 	query := w.NewQuery(parameters)
 	for query.Next() {
-		pages := getPagesFromQuery(query.Resp())
+		pages := ybtools.GetPagesFromQuery(query.Resp())
 		if len(pages) > 0 {
 			if !rfcCat {
 				// on the first item of the entire set, and the first item ONLY, save the timestamp and the page id into a var to write to runfile later
 				// RfCs don't use this as there's fewer of them and it's more difficult to get them in timestamp order
 				if len(firstItem) == 0 {
 					var runfileBuilder strings.Builder
-					runfileBuilder.WriteString(getCategorisationTimestampFromPage(pages[0], category))
+					runfileBuilder.WriteString(ybtools.GetCategorisationTimestampFromPage(pages[0], category))
 					runfileBuilder.WriteString(";")
 
 					firstItemPageID, err := pages[0].GetInt64("pageid")
@@ -137,7 +138,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					continue
 				}
 
-				pageContent, err := getContentFromPage(page)
+				pageContent, err := ybtools.GetContentFromPage(page)
 				if err != nil {
 					log.Println("getContentFromPage failed on page ID", pageID, "so skipping it")
 					continue
@@ -170,7 +171,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					// Because each article can only have one GA nomination at a time, it's not necessary to do the full gamut of RfC checks here
 					// we can instead just pass it on to requestFeedbackFor after checking that it's not the same page we did first last time
 					// to do that check, we check whether the page ID and timestamp are the same (both stored in the runfile) - if they are, it's the same page
-					if (pageID == startID) && (getCategorisationTimestampFromPage(page, category) == startStamp) {
+					if (pageID == startID) && (ybtools.GetCategorisationTimestampFromPage(page, category) == startStamp) {
 						// it's the first page from last time, we're probably at the end - skip over it
 						continue
 					} else {
