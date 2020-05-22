@@ -89,10 +89,16 @@ func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSU
 
 	for _, header := range headers {
 		users := make([]FRSUser, 0, n)
+		headerPickedUsers := 0
 
 		i := 0
 		for i < n {
 			var user FRSUser
+
+			// if all the users under the header have been picked, break from the loop
+			if len(list[header]) == headerPickedUsers {
+				break
+			}
 
 			if len(list[header]) <= n {
 				// very small list, or very large n
@@ -125,6 +131,7 @@ func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSU
 				}
 				// user not yet picked, now we add the user to the picked list and then see if the user is valid
 				pickedusers[user.Username] = true
+				headerPickedUsers++
 			}
 
 			if user.GetCount(header) >= user.Limit {
