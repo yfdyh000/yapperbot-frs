@@ -56,7 +56,7 @@ func init() {
 	// This regex matches on the Feedback Request Service list.
 	// The first group matches the header (minus the ===s)
 	// The second matches all of the contents underneath that header
-	listParserRegex = regexp.MustCompile(`===(.*?)===\n((?i:\*\s*{{frs user.*?}}\n?)+)`)
+	listParserRegex = regexp.MustCompile(`===(.*?)===\n((?i:\*\s*{{frs user.*?}}\n*)+)`)
 
 	// This regex matches each user individually in a section of the FRS list.
 	// The first group matches the user name
