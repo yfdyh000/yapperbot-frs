@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -41,6 +40,11 @@ func main() {
 	var w *mwclient.Client
 	var err error
 
+	botPassword, err := ioutil.ReadFile("botpassword")
+	if err != nil {
+		log.Fatal("Failed to read from bot password file - this is required for authentication! Create the file or make it appropriately readable.")
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
 	w, err = mwclient.New(yapperconfig.Config.APIEndpoint, "Yapperbot-FRS v1")
@@ -48,7 +52,7 @@ func main() {
 		log.Fatal("Failed to create MediaWiki client with error ", err)
 	}
 
-	err = w.Login(yapperconfig.Config.BotUsername, os.Getenv("WP_BOT_PASSWORD"))
+	err = w.Login(yapperconfig.Config.BotUsername, string(botPassword))
 	if err != nil {
 		log.Fatal("Failed to authenticate with MediaWiki with error ", err)
 	}
