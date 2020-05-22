@@ -97,6 +97,13 @@ func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSU
 			if len(list[header]) <= n {
 				// very small list, or very large n
 				// just give the entire list after checking for user limits
+
+				if len(list[header]) == i {
+					// there are no more elements to return, we've been through the entire list
+					// just set the users for this header as they are, like it or lump it!
+					break
+				}
+
 				user = list[header][i]
 
 				if i >= len(list[header]) {
@@ -205,6 +212,8 @@ func saveSentCounts(w *mwclient.Client) {
 	sentCountJSONBuilder.WriteString(serializeSentCount(sentCount))
 	sentCountJSONBuilder.WriteString(`}`)
 
+	// this is in userspace, and it's really desperately necessary - do not count this for edit limiting
+	// if yapperconfig.EditLimit() {
 	err := w.Edit(params.Values{
 		"pageid":   sentCountPageID,
 		"summary":  "FRS run complete, updating sentcounts",
@@ -221,4 +230,5 @@ func saveSentCounts(w *mwclient.Client) {
 			log.Fatal("Failed to update sentcounts with error ", err)
 		}
 	}
+	// }
 }

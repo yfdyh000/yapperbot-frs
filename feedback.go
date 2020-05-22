@@ -26,6 +26,7 @@ import (
 	"strings"
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/rfc"
+	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -77,31 +78,33 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 
 			for _, user := range users {
 				// Drop a note on each user's talk page inviting them to participate
-				err := w.Edit(params.Values{
-					"title":        "User talk:" + user.Username,
-					"section":      "new",
-					"sectiontitle": sectiontitle,
-					"summary":      editsummary,
-					"notminor":     "true",
-					"bot":          "true",
-					"text":         notificationText,
-				})
-				if err == nil {
-					log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
-					user.MarkMessageSent(header)
-				} else {
-					switch err.(type) {
-					case mwclient.APIError:
-						switch err.(mwclient.APIError).Code {
-						case "noedit", "writeapidenied", "blocked":
-							log.Fatal("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
-						case "pagedeleted":
-							log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
+				if yapperconfig.EditLimit() {
+					err := w.Edit(params.Values{
+						"title":        "User talk:" + user.Username,
+						"section":      "new",
+						"sectiontitle": sectiontitle,
+						"summary":      editsummary,
+						"notminor":     "true",
+						"bot":          "true",
+						"text":         notificationText,
+					})
+					if err == nil {
+						log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
+						user.MarkMessageSent(header)
+					} else {
+						switch err.(type) {
+						case mwclient.APIError:
+							switch err.(mwclient.APIError).Code {
+							case "noedit", "writeapidenied", "blocked":
+								log.Fatal("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
+							case "pagedeleted":
+								log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
+							default:
+								log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
+							}
 						default:
-							log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
+							log.Fatal("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
 						}
-					default:
-						log.Fatal("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
 					}
 				}
 			}

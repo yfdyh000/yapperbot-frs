@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -47,14 +48,18 @@ func MarkRfcsDone(w *mwclient.Client, pageID string, rfcsDone []RfC) {
 		content = rfcTagRegex.ReplaceAllString(content, "{{Rfc$1|frsdone=true}}")
 	}
 
-	err = w.Edit(params.Values{
-		"pageid":  pageID,
-		"summary": "FRS processing for page complete, marking RfC(s) as frsdone",
-		"minor":   "true",
-		"bot":     "true",
-		"text":    content,
-	})
-	if err != nil {
-		log.Fatal("Failed to update RfC page ", pageID, " to mark as done, with error ", err)
+	if yapperconfig.EditLimit() {
+		err = w.Edit(params.Values{
+			"pageid":  pageID,
+			"summary": "FRS processing for page complete, marking RfC(s) as frsdone",
+			"minor":   "true",
+			"bot":     "true",
+			"text":    content,
+		})
+		if err != nil {
+			log.Fatal("Failed to update RfC page ", pageID, " to mark as done, with error ", err)
+		}
+	} else {
+		log.Println("WARNING: EDIT LIMITED OUT OF MARKING RFC AS FRSDONE ON PAGE ID", pageID)
 	}
 }

@@ -1,3 +1,4 @@
 .env
 *.frsrunfile
 config.yml
+editlimit

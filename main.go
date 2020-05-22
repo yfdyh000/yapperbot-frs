@@ -55,6 +55,7 @@ func main() {
 
 	frslist.Populate(w)
 	defer frslist.FinishRun(w)
+	defer yapperconfig.SaveEditLimit()
 
 	ga.FetchGATopics(w)
 
@@ -105,6 +106,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 
 	var firstItem string = ""
 	query := w.NewQuery(parameters)
+
 	for query.Next() {
 		pages := ybtools.GetPagesFromQuery(query.Resp())
 		if len(pages) > 0 {
@@ -125,6 +127,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 				}
 			}
 
+		PAGELOOP:
 			for index, page := range pages {
 				pageIDInt, err := page.GetInt64("pageid")
 				if err != nil {
@@ -150,16 +153,21 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					if err != nil {
 						if _, isRfCNoIDYet := err.(rfc.NoRfCIDYetError); isRfCNoIDYet {
 							// if any of the RfCs don't yet have an ID, we skip the page - it'll be included in the next run as this is an RfC page
-							continue
+							log.Println("RfC has no ID yet on page", pageTitle, "so skipping")
+							continue PAGELOOP
 						} else {
 							log.Fatal("extractRfcs errored with ", err)
 						}
 					}
 					rfcsDone := make([]rfc.RfC, 0, len(rfcsToProcess))
+
+				RFCLOOP:
 					for _, rfc := range rfcsToProcess {
 						if rfc.FeedbackDone {
-							continue
+							log.Println("RfC feedback already done for an RfC on", pageTitle, "so skipping")
+							continue RFCLOOP
 						} else {
+							log.Println("Requesting feedback for an RfC on", pageTitle)
 							requestFeedbackFor(rfc, w)
 							rfcsDone = append(rfcsDone, rfc)
 						}
@@ -173,7 +181,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					// to do that check, we check whether the page ID and timestamp are the same (both stored in the runfile) - if they are, it's the same page
 					if (pageID == startID) && (ybtools.GetCategorisationTimestampFromPage(page, category) == startStamp) {
 						// it's the first page from last time, we're probably at the end - skip over it
-						continue
+						continue PAGELOOP
 					} else {
 						requestFeedbackFor(extractGANom(pageContent, pageTitle), w)
 					}
