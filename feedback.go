@@ -79,6 +79,9 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 			for _, user := range users {
 				// Drop a note on each user's talk page inviting them to participate
 				if yapperconfig.EditLimit() {
+					// the redirect param here automatically resolves redirects,
+					// for instance if a user changes their username but forgets
+					// to update the FRS user tag
 					err := w.Edit(params.Values{
 						"title":        "User talk:" + user.Username,
 						"section":      "new",
@@ -87,6 +90,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 						"notminor":     "true",
 						"bot":          "true",
 						"text":         notificationText,
+						"redirect":     "true",
 					})
 					if err == nil {
 						log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
