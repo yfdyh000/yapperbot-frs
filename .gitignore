@@ -1,5 +1,6 @@
 .env
 *.frsrunfile
-config.yml
+config.yml*
 editlimit
 botpassword
+yapperbot-frs

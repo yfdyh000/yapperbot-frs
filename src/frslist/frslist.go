@@ -84,72 +84,59 @@ func GetListHeaders() []string {
 func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSUser) {
 	// maps header to array of users
 	headerusers = map[string][]FRSUser{}
-	// maps user to true if used - used for o(1) lookups of the user to check if already included
+	// maps user to true if used - used for o(1) lookups of the user to check if already included under any header
 	pickedusers := map[string]bool{}
 
 	for _, header := range headers {
 		users := make([]FRSUser, 0, n)
-		headerPickedUsers := 0
 
-		i := 0
-		for i < n {
-			var user FRSUser
-
-			// if all the users under the header have been picked, break from the loop
-			if len(list[header]) == headerPickedUsers {
-				break
+		if len(list[header]) <= n {
+			// very small list, or very large n
+			// just give the entire list after checking for user limits
+			for _, user := range list[header] {
+				// what happens with this doesn't matter here, as we're literally just adding all qualifying users
+				checkUserAndIncludeInHeader(user, &pickedusers, header, &users)
 			}
-
-			if len(list[header]) <= n {
-				// very small list, or very large n
-				// just give the entire list after checking for user limits
-
-				if len(list[header]) == i {
-					// there are no more elements to return, we've been through the entire list
-					// just set the users for this header as they are, like it or lump it!
+		} else {
+			// get random indexes (.Perm returns a random permutation of 0-(n-1))
+			for _, i := range randomGenerator.Perm(len(list[header])) {
+				if len(users) >= n {
+					// we've already picked the number requested, stop picking
 					break
 				}
-
-				user = list[header][i]
-
-				if i >= len(list[header]) {
-					// if we've looped over the entire length of the header list, break out to the main header loop
-					break
-				} else if pickedusers[user.Username] {
-					// if the user is already included, skip it and increment i here - we're not randomly selecting, we don't have that many users to choose from
-					i++
-					continue
-				}
-
-				pickedusers[user.Username] = true
-			} else {
-				selected := randomGenerator.Intn(len(list[header]))
-				user := list[header][selected]
-				if pickedusers[user.Username] {
-					// the user has already been picked, do it again without incrementing i
-					continue
-				}
-				// user not yet picked, now we add the user to the picked list and then see if the user is valid
-				pickedusers[user.Username] = true
-				headerPickedUsers++
+				checkUserAndIncludeInHeader(list[header][i], &pickedusers, header, &users)
 			}
-
-			if user.GetCount(header) >= user.Limit {
-				// user has exceeded limit, or this message would cause them to exceed the limit; ignore them and move on
-				continue
-			}
-
-			// user is good to go! expand the slice...
-			users = users[:len(users)+1]
-			// ... and add them to the list!
-			users[i] = user
-			i++
 		}
 
 		headerusers[header] = users
 	}
 
 	return
+}
+
+// takes a user, a pickedusers map, the header, and the list of users
+// checks if the user is eligible for inclusion and if they are, adds them to pickedusers and users
+func checkUserAndIncludeInHeader(user FRSUser, pickedusers *map[string]bool, header string, users *[]FRSUser) {
+	if (*pickedusers)[user.Username] {
+		// if the user is already included, skip it
+		return
+	}
+
+	(*pickedusers)[user.Username] = true
+
+	if user.GetCount(header) >= user.Limit {
+		// user has exceeded limit, or this message would cause them to exceed the limit; ignore them and move on
+		return
+	}
+
+	// user is good to go! expand the slice...
+	// expanding the slice in here means we need a pointer to a slice, not just the slice.
+	// if it was just the slice, it would update the elements in the underlying array; however,
+	// we're changing the length, which means changing the slice itself, which needs a pointer
+	oldlen := len(*users)
+	*users = (*users)[:oldlen+1] // oldlen+1 expands the length by 1, the slice notation here uses length, not index
+	// ... and add them to the list! (oldlen is now the last key of the new slice)
+	(*users)[oldlen] = user
 }
 
 // FinishRun for now just calls saveSentCounts, but could do something else too in future
