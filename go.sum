@@ -9,6 +9,14 @@ github.com/mashedkeyboard/ybtools v0.1.4 h1:ykbbV2OZrXLkekOP+NUtN3daQ4HcMuMXaZ2F
 github.com/mashedkeyboard/ybtools v0.1.4/go.mod h1:7BV0LX0+Dj+W1KZ+X1glBAh+ykd/l7tcRPn/vqWZi7E=
 github.com/mashedkeyboard/ybtools v0.1.5 h1:MsWcnLvyg0j4auBmr3xCyi4YLPd6BkubyJmRwdW7SBE=
 github.com/mashedkeyboard/ybtools v0.1.5/go.mod h1:7BV0LX0+Dj+W1KZ+X1glBAh+ykd/l7tcRPn/vqWZi7E=
+github.com/mashedkeyboard/ybtools v0.1.6-0.20200524211424-5071e539e286 h1:xaxtQJ8c4D/mAX6lyGDbXjxeP/1SuOHmqkE2a9hMhXo=
+github.com/mashedkeyboard/ybtools v0.1.6-0.20200524211424-5071e539e286/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
+github.com/mashedkeyboard/ybtools v0.1.6 h1:Q7UNKzpYrgdHVqMYMnH/vpbsGtUn4mZ/ic32qZ7AKPE=
+github.com/mashedkeyboard/ybtools v0.1.6/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
+github.com/mashedkeyboard/ybtools v0.1.7 h1:gypjDCQWHFbf8wyRvpscwpLa87L/uZu8VjI/lJkYMTI=
+github.com/mashedkeyboard/ybtools v0.1.7/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
+github.com/mashedkeyboard/ybtools v0.1.8 h1:oUB05z3/OM4IsobS/xySwbQrnQCc9n8O47CE9V9/6x0=
+github.com/mashedkeyboard/ybtools v0.1.8/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
 github.com/metal3d/go-slugify v0.0.0-20160607203414-7ac2014b2f23 h1:UhdgaX0bR9ZSz+jRK6cPQLU94Q3KB14ijuHum8YbvBA=
 github.com/metal3d/go-slugify v0.0.0-20160607203414-7ac2014b2f23/go.mod h1:sCALRmIiknhX1lHQ8flRsWKMazu5BBjMochEnDupxrk=
 github.com/mrjones/oauth v0.0.0-20190623134757-126b35219450 h1:j2kD3MT1z4PXCiUllUJF9mWUESr9TWKS7iEKsQ/IipM=

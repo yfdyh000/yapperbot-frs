@@ -28,7 +28,6 @@ import (
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/ga"
 	"yapperbot-frs/src/rfc"
-	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -37,25 +36,11 @@ import (
 )
 
 func main() {
-	var w *mwclient.Client
-	var err error
-
-	botPassword, err := ioutil.ReadFile("botpassword")
-	if err != nil {
-		log.Fatal("Failed to read from bot password file - this is required for authentication! Create the file or make it appropriately readable.")
-	}
+	ybtools.SetupBot("FRS", "Yapperbot")
 
 	rand.Seed(time.Now().UnixNano())
 
-	w, err = mwclient.New(yapperconfig.Config.APIEndpoint, "Yapperbot-FRS v1")
-	if err != nil {
-		log.Fatal("Failed to create MediaWiki client with error ", err)
-	}
-
-	err = w.Login(yapperconfig.Config.BotUsername, string(botPassword))
-	if err != nil {
-		log.Fatal("Failed to authenticate with MediaWiki with error ", err)
-	}
+	w := ybtools.CreateAndAuthenticateClient()
 
 	frslist.Populate(w)
 	defer frslist.FinishRun(w)

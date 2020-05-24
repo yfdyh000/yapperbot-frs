@@ -18,34 +18,18 @@ package yapperconfig
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-import (
-	"io/ioutil"
-	"log"
+import "github.com/mashedkeyboard/ybtools"
 
-	"github.com/mashedkeyboard/ybtools"
-	"gopkg.in/yaml.v2"
-)
-
+// this doesn't include EditLimit, which is handled by ybtools
 type configObject struct {
 	FRSPageID                string
 	SentCountPageID          string
 	GAGuidelinesHeaderPageID string
-	APIEndpoint              string
-	BotUsername              string
-	EditLimit                int64
 }
 
 // Config is the global configuration object. This should only really ever be read from.
 var Config configObject
 
 func init() {
-	configFile, err := ioutil.ReadFile("config.yml")
-	if err != nil {
-		log.Fatal("Config file does not exist, create it!")
-	}
-	yaml.Unmarshal(configFile, &Config)
-
-	if Config.EditLimit > 0 {
-		ybtools.SetupEditLimit(Config.EditLimit)
-	}
+	ybtools.ParseTaskConfig(&Config)
 }
