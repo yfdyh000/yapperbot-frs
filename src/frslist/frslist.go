@@ -49,9 +49,6 @@ var userParserRegex *regexp.Regexp
 
 var randomGenerator *rand.Rand
 
-var frsPageID string = yapperconfig.Config.FRSPageID
-var sentCountPageID string = yapperconfig.Config.SentCountPageID
-
 func init() {
 	// This regex matches on the Feedback Request Service list.
 	// The first group matches the header (minus the ===s)
@@ -145,7 +142,7 @@ func FinishRun(w *mwclient.Client) {
 }
 
 func populateFrsList(w *mwclient.Client) {
-	text, err := ybtools.FetchWikitext(w, frsPageID)
+	text, err := ybtools.FetchWikitext(w, yapperconfig.Config.FRSPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch and parse FRS page with error ", err)
 	}
@@ -178,7 +175,7 @@ func populateSentCount(w *mwclient.Client) {
 	// {"month": "2020-05", "headers": {"category": {"username": 8}}}
 	// where username had been sent 8 messages in the month of May 2020 and the header "category".
 
-	storedJSON, err := ybtools.FetchWikitext(w, sentCountPageID)
+	storedJSON, err := ybtools.FetchWikitext(w, yapperconfig.Config.SentCountPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch sent count page with error ", err)
 	}
@@ -209,7 +206,7 @@ func saveSentCounts(w *mwclient.Client) {
 	// this is in userspace, and it's really desperately necessary - do not count this for edit limiting
 	// if yapperconfig.EditLimit() {
 	err := w.Edit(params.Values{
-		"pageid":   sentCountPageID,
+		"pageid":   yapperconfig.Config.SentCountPageID,
 		"summary":  "FRS run complete, updating sentcounts",
 		"notminor": "true",
 		"bot":      "true",

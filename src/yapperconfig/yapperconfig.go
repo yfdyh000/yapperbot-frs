@@ -18,8 +18,6 @@ package yapperconfig
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-import "github.com/mashedkeyboard/ybtools"
-
 // this doesn't include EditLimit, which is handled by ybtools
 type configObject struct {
 	FRSPageID                string
@@ -29,7 +27,3 @@ type configObject struct {
 
 // Config is the global configuration object. This should only really ever be read from.
 var Config configObject
-
-func init() {
-	ybtools.ParseTaskConfig(&Config)
-}

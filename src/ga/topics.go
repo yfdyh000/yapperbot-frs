@@ -32,8 +32,6 @@ var gaTopics map[string]string
 var gaTopicsRegex *regexp.Regexp
 var gaSubtopicRegex *regexp.Regexp
 
-var gaGuidelinesHeaderPageID string = yapperconfig.Config.GAGuidelinesHeaderPageID
-
 func init() {
 	gaTopics = map[string]string{
 		"Miscellaneous": "Miscellaneous",
@@ -48,7 +46,7 @@ func init() {
 
 // FetchGATopics takes a mwclient and fetches the latest GA topics from the Good Article noms page.
 func FetchGATopics(w *mwclient.Client) {
-	text, err := ybtools.FetchWikitext(w, gaGuidelinesHeaderPageID)
+	text, err := ybtools.FetchWikitext(w, yapperconfig.Config.GAGuidelinesHeaderPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch Good Articles topics with error ", err)
 	}

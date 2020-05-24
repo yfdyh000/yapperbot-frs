@@ -28,6 +28,7 @@ import (
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/ga"
 	"yapperbot-frs/src/rfc"
+	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -35,9 +36,12 @@ import (
 	"github.com/metal3d/go-slugify"
 )
 
-func main() {
+func init() {
 	ybtools.SetupBot("FRS", "Yapperbot")
+	ybtools.ParseTaskConfig(&yapperconfig.Config)
+}
 
+func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	w := ybtools.CreateAndAuthenticateClient()
