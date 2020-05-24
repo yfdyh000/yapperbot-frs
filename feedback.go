@@ -26,10 +26,10 @@ import (
 	"strings"
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/rfc"
-	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 const maxMsgsToSend int = 25
@@ -78,7 +78,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 
 			for _, user := range users {
 				// Drop a note on each user's talk page inviting them to participate
-				if yapperconfig.EditLimit() {
+				if ybtools.EditLimit() {
 					// the redirect param here automatically resolves redirects,
 					// for instance if a user changes their username but forgets
 					// to update the FRS user tag

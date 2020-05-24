@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"yapperbot-frs/src/yapperconfig"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -48,7 +47,7 @@ func MarkRfcsDone(w *mwclient.Client, pageID string, rfcsDone []RfC) {
 		content = rfcTagRegex.ReplaceAllString(content, "{{Rfc$1|frsdone=true}}")
 	}
 
-	if yapperconfig.EditLimit() {
+	if ybtools.EditLimit() {
 		err = w.Edit(params.Values{
 			"pageid":  pageID,
 			"summary": "FRS processing for page complete, marking RfC(s) as frsdone",

@@ -59,7 +59,7 @@ func main() {
 
 	frslist.Populate(w)
 	defer frslist.FinishRun(w)
-	defer yapperconfig.SaveEditLimit()
+	defer ybtools.SaveEditLimit()
 
 	ga.FetchGATopics(w)
 
