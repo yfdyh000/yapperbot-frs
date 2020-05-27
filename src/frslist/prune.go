@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
@@ -76,7 +78,7 @@ func pruneUsersFromList(text string, w *mwclient.Client, dbserver, dbuser, dbpas
 			// We have no use whatsoever for the output of this, we just want to see if it errors.
 			// That being said, Scan() doesn't let us just pass nothing, so we have to have the
 			// slight pain of having a stupid additional variable.
-			err := query.QueryRow(user.Username, editsSinceStamp).Scan(&ignoredOutputFromQueryRow)
+			err := query.QueryRow(usernameCase(user.Username), editsSinceStamp).Scan(&ignoredOutputFromQueryRow)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					log.Println("Queuing", user.Username, "for pruning")
@@ -145,4 +147,24 @@ func checkUsersForPruning(w *mwclient.Client, users []string, userLookup map[str
 	}
 
 	return users
+}
+
+// Takes a string, s, and converts the first rune to uppercase
+// by using the unicode functions in golang's stdlib
+// Returns the converted string
+func usernameCase(s string) string {
+	firstRune, size := utf8.DecodeRuneInString(s)
+	if firstRune != utf8.RuneError || size > 1 {
+		var upcase rune
+
+		if replacement, exists := charReplaceUpcase[firstRune]; exists {
+			upcase = replacement
+		} else {
+			upcase = unicode.ToUpper(firstRune)
+		}
+		if upcase != firstRune {
+			s = string(upcase) + s[size:]
+		}
+	}
+	return strings.ReplaceAll(s, "_", " ")
 }
