@@ -2,6 +2,8 @@ cgt.name/pkg/go-mwclient v1.0.3 h1:ywIRG2KBMqINwct/yRH2t44djiMyIgqm0QCcRBBTqGA=
 cgt.name/pkg/go-mwclient v1.0.3/go.mod h1:sxgLqpaVbtOhM1KiAUPkkRdsE6au+E64Bq9a2GyAQdU=
 github.com/antonholmquist/jason v1.0.1-0.20180605105355-426ade25b261 h1:EhjUMUb2k4WYhEjGTMB3XmD7qf6IAmJQWPpE69sI+sI=
 github.com/antonholmquist/jason v1.0.1-0.20180605105355-426ade25b261/go.mod h1:+GxMEKI0Va2U8h3os6oiUAetHAlGMvxjdpAH/9uvUMA=
+github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=
+github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/mashedkeyboard/ybtools v0.1.0 h1:LvMP3YvbBs318K332FqR8IDDaImZ20q5a9l0BdeFy+k=
 github.com/mashedkeyboard/ybtools v0.1.0/go.mod h1:7BV0LX0+Dj+W1KZ+X1glBAh+ykd/l7tcRPn/vqWZi7E=
 github.com/mashedkeyboard/ybtools v0.1.1/go.mod h1:7BV0LX0+Dj+W1KZ+X1glBAh+ykd/l7tcRPn/vqWZi7E=
@@ -21,6 +23,8 @@ github.com/mashedkeyboard/ybtools v1.0.0 h1:EtXFY+5EzMCEoZfTKyclhnNXcYep+L7s5sng
 github.com/mashedkeyboard/ybtools v1.0.0/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
 github.com/mashedkeyboard/ybtools v1.0.1 h1:AASfEH6ppd3hBMuiM5+e50/5WqsXQ1B0YFYB4RuCm5A=
 github.com/mashedkeyboard/ybtools v1.0.1/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
+github.com/mashedkeyboard/ybtools v1.1.0 h1:UaxJwjlSfLYPnTuNnpVVg9FKBouUMaeg7tbkrPPq/34=
+github.com/mashedkeyboard/ybtools v1.1.0/go.mod h1:iSTgySJZHtMLl+UDerV2EVGDhOOWRqdFT8iD0FeBMts=
 github.com/metal3d/go-slugify v0.0.0-20160607203414-7ac2014b2f23 h1:UhdgaX0bR9ZSz+jRK6cPQLU94Q3KB14ijuHum8YbvBA=
 github.com/metal3d/go-slugify v0.0.0-20160607203414-7ac2014b2f23/go.mod h1:sCALRmIiknhX1lHQ8flRsWKMazu5BBjMochEnDupxrk=
 github.com/mrjones/oauth v0.0.0-20190623134757-126b35219450 h1:j2kD3MT1z4PXCiUllUJF9mWUESr9TWKS7iEKsQ/IipM=

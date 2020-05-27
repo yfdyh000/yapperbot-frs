@@ -71,6 +71,11 @@ func Populate(w *mwclient.Client) {
 	populateSentCount(w)
 }
 
+// Prune starts the user pruning process to remove old users from the FRS list.
+func Prune(w *mwclient.Client, dbserver, dbuser, dbpassword, db string) {
+	pruneUsersFromList(populateFrsList(w), w, dbserver, dbuser, dbpassword, db)
+}
+
 // GetListHeaders is a simple getter for listHeaders
 func GetListHeaders() []string {
 	return listHeaders
@@ -141,7 +146,7 @@ func FinishRun(w *mwclient.Client) {
 	saveSentCounts(w)
 }
 
-func populateFrsList(w *mwclient.Client) {
+func populateFrsList(w *mwclient.Client) string {
 	text, err := ybtools.FetchWikitext(w, yapperconfig.Config.FRSPageID)
 	if err != nil {
 		log.Fatal("Failed to fetch and parse FRS page with error ", err)
@@ -167,6 +172,8 @@ func populateFrsList(w *mwclient.Client) {
 		listHeaders[i] = header
 		i++
 	}
+
+	return text
 }
 
 func populateSentCount(w *mwclient.Client) {

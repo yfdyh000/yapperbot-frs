@@ -5,3 +5,4 @@ config-frs.yml*
 editlimit
 botpassword
 yapperbot-frs
+prune.txt
