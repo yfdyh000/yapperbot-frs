@@ -30,7 +30,6 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/antonholmquist/jason"
 	"github.com/mashedkeyboard/ybtools"
 )
 
@@ -181,15 +180,7 @@ func populateSentCount(w *mwclient.Client) {
 	// It is made up of something that looks like this:
 	// {"month": "2020-05", "headers": {"category": {"username": 8}}}
 	// where username had been sent 8 messages in the month of May 2020 and the header "category".
-
-	storedJSON, err := ybtools.FetchWikitext(w, yapperconfig.Config.SentCountPageID)
-	if err != nil {
-		log.Fatal("Failed to fetch sent count page with error ", err)
-	}
-	parsedJSON, err := jason.NewObjectFromBytes([]byte(storedJSON))
-	if err != nil {
-		log.Fatal("Failed to parse sent count JSON with error ", err)
-	}
+	parsedJSON := yapperconfig.LoadJSONFromPageID(w, yapperconfig.Config.SentCountPageID)
 
 	contentMonth, _ := parsedJSON.GetString("month")
 	// yes, really, you have to specify time formats with a specific time in Go
@@ -204,11 +195,12 @@ func populateSentCount(w *mwclient.Client) {
 
 func saveSentCounts(w *mwclient.Client) {
 	var sentCountJSONBuilder strings.Builder
-	sentCountJSONBuilder.WriteString(`{"DO NOT TOUCH THIS PAGE":"This page is used internally by Yapperbot to make the Feedback Request Service work.","month":"`)
+	sentCountJSONBuilder.WriteString(yapperconfig.OpeningJSON)
+	sentCountJSONBuilder.WriteString(`"month":"`)
 	sentCountJSONBuilder.WriteString(time.Now().Format("2006-01"))
 	sentCountJSONBuilder.WriteString(`","headers":`)
-	sentCountJSONBuilder.WriteString(serializeSentCount(sentCount))
-	sentCountJSONBuilder.WriteString(`}`)
+	sentCountJSONBuilder.WriteString(yapperconfig.SerializeToJSON(sentCount))
+	sentCountJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
 	// this is in userspace, and it's really desperately necessary - do not count this for edit limiting
 	// if yapperconfig.EditLimit() {

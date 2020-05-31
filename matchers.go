@@ -30,7 +30,6 @@ var gaMatcher *regexp.Regexp
 var namedParamMatcher *regexp.Regexp
 
 const rfcIDParam string = "rfcid="
-const rfcFeedbackDoneParam string = "frsdone="
 
 func init() {
 	// RfC matching regex.
@@ -55,6 +54,8 @@ func init() {
 // extractRfcs takes a string of content containing rfcs, and the page title,
 // and returns a slice of rfcs. It can optionally be passed excludeDone, which prevents
 // already-done RfCs from being included in the generated list.
+// extractRfcs output should be checked for RfCs with no ID string, as those haven't
+// yet been assigned an ID by Legobot.
 func extractRfcs(content string, title string, excludeDone bool) (rfcs []rfc.RfC, err error) {
 	matchedRfcTags := rfcMatcher.FindAllStringSubmatch(content, -1)
 	for _, tag := range matchedRfcTags {
@@ -66,17 +67,14 @@ func extractRfcs(content string, title string, excludeDone bool) (rfcs []rfc.RfC
 			for _, p := range pr {
 				if strings.Contains(p, rfcIDParam) {
 					id = strings.TrimPrefix(p, rfcIDParam)
-				} else if strings.Contains(p, rfcFeedbackDoneParam) {
-					done = true
 				} else if !namedParamMatcher.MatchString(p) {
 					// it's not a named param, we can assume it's a category
 					// for more on why this is like this, see frsRequesting
 					cats[p] = true
 				}
 			}
-			if id == "" {
-				err = rfc.NoRfCIDYetError{}
-				return
+			if id != "" && rfc.AlreadyDone(id) {
+				done = true
 			}
 			return
 		}(params)

@@ -69,7 +69,9 @@ func main() {
 		rand.Seed(time.Now().UnixNano())
 
 		frslist.Populate(w)
+		rfc.LoadRfcsDone(w)
 		defer frslist.FinishRun(w)
+		defer rfc.SaveRfcsDone(w)
 		defer ybtools.SaveEditLimit()
 
 		ga.FetchGATopics(w)
@@ -165,31 +167,27 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 
 				if rfcCat {
 					// (content, title, excludeDone)
-					rfcsToProcess, err := extractRfcs(pageContent, pageTitle, true)
+					rfcsToProcess, err := extractRfcs(pageContent, pageTitle, false)
 					if err != nil {
-						if _, isRfCNoIDYet := err.(rfc.NoRfCIDYetError); isRfCNoIDYet {
-							// if any of the RfCs don't yet have an ID, we skip the page - it'll be included in the next run as this is an RfC page
-							log.Println("RfC has no ID yet on page", pageTitle, "so skipping")
-							continue PAGELOOP
-						} else {
-							log.Fatal("extractRfcs errored with ", err)
-						}
+						log.Fatal("extractRfcs errored with ", err)
 					}
 					rfcsDone := make([]rfc.RfC, 0, len(rfcsToProcess))
 
 				RFCLOOP:
 					for _, rfc := range rfcsToProcess {
-						if rfc.FeedbackDone {
-							log.Println("RfC feedback already done for an RfC on", pageTitle, "so skipping")
+						if rfc.ID == "" {
+							log.Println("RfC has no ID yet on page", pageTitle, "so skipping that RfC")
 							continue RFCLOOP
+						} else if rfc.FeedbackDone {
+							log.Println("RfC feedback already done for an RfC on", pageTitle, "so skipping that RfC")
 						} else {
 							log.Println("Requesting feedback for an RfC on", pageTitle)
 							requestFeedbackFor(rfc, w)
-							rfcsDone = append(rfcsDone, rfc)
 						}
+						rfcsDone = append(rfcsDone, rfc)
 					}
 					if len(rfcsDone) > 0 {
-						rfc.MarkRfcsDone(w, pageID, rfcsDone)
+						rfc.MarkRfcsDone(rfcsDone)
 					}
 				} else {
 					// Because each article can only have one GA nomination at a time, it's not necessary to do the full gamut of RfC checks here
