@@ -25,6 +25,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // doneRfcs maps found this session and completed/already-completed
@@ -47,7 +48,7 @@ func MarkRfcsDone(rfcsDone []RfC) {
 // LoadRfcsDone takes an mwclient and loads the RFCs that have already been marked as done into loadedRfcs.
 // It needs to be called before the start of each session that includes an RfC lookup.
 func LoadRfcsDone(w *mwclient.Client) {
-	rfcsDoneJSON := yapperconfig.LoadJSONFromPageID(w, yapperconfig.Config.RFCsDonePageID)
+	rfcsDoneJSON := ybtools.LoadJSONFromPageID(w, yapperconfig.Config.RFCsDonePageID)
 	rfcsDoneList, err := rfcsDoneJSON.GetStringArray("rfcsdone")
 	if err != nil {
 		log.Fatal("rfcsdone not found in rfcsDoneJSON! the JSON looks corrupt.")
@@ -78,7 +79,7 @@ func SaveRfcsDone(w *mwclient.Client) {
 
 	rfcsDoneJSONBuilder.WriteString(yapperconfig.OpeningJSON)
 	rfcsDoneJSONBuilder.WriteString(`"rfcsdone":`)
-	rfcsDoneJSONBuilder.WriteString(yapperconfig.SerializeToJSON(rfcsDoneSlice))
+	rfcsDoneJSONBuilder.WriteString(ybtools.SerializeToJSON(rfcsDoneSlice))
 	rfcsDoneJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
 	err := w.Edit(params.Values{

@@ -180,7 +180,7 @@ func populateSentCount(w *mwclient.Client) {
 	// It is made up of something that looks like this:
 	// {"month": "2020-05", "headers": {"category": {"username": 8}}}
 	// where username had been sent 8 messages in the month of May 2020 and the header "category".
-	parsedJSON := yapperconfig.LoadJSONFromPageID(w, yapperconfig.Config.SentCountPageID)
+	parsedJSON := ybtools.LoadJSONFromPageID(w, yapperconfig.Config.SentCountPageID)
 
 	contentMonth, _ := parsedJSON.GetString("month")
 	// yes, really, you have to specify time formats with a specific time in Go
@@ -199,7 +199,7 @@ func saveSentCounts(w *mwclient.Client) {
 	sentCountJSONBuilder.WriteString(`"month":"`)
 	sentCountJSONBuilder.WriteString(time.Now().Format("2006-01"))
 	sentCountJSONBuilder.WriteString(`","headers":`)
-	sentCountJSONBuilder.WriteString(yapperconfig.SerializeToJSON(sentCount))
+	sentCountJSONBuilder.WriteString(ybtools.SerializeToJSON(sentCount))
 	sentCountJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
 	// this is in userspace, and it's really desperately necessary - do not count this for edit limiting
