@@ -11,8 +11,6 @@ import (
 	"unicode/utf8"
 
 	"cgt.name/pkg/go-mwclient"
-	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
 
 	// needs to be blank-imported to make the driver work
 	_ "github.com/go-sql-driver/mysql"
@@ -106,47 +104,6 @@ func pruneUsersFromList(text string, w *mwclient.Client, dbserver, dbuser, dbpas
 	fmt.Println("===================================== REMOVED USERS =====================================")
 	fmt.Println("=========================================================================================")
 	fmt.Println(strings.Join(usersToRemove, "\n"))
-}
-
-func checkUsersForPruning(w *mwclient.Client, users []string, userLookup map[string]bool) []string {
-	log.Println("Calling mw")
-	query := w.NewQuery(params.Values{
-		"action":  "query",
-		"list":    "usercontribs",
-		"uclimit": "1",
-		"ucend":   time.Now().AddDate(-3, 0, 0).Format(time.RFC3339), // RFC 3339 representation of the timestamp 3 years ago
-		"ucuser":  strings.Join(users, "|"),
-	})
-	log.Println("users:", strings.Join(users, "|"))
-
-	for query.Next() {
-		// log.Println("Query iteration")
-		contribsArray := ybtools.GetThingFromQuery(query.Resp(), "usercontribs")
-		// log.Println(query.Resp())
-		for _, contrib := range contribsArray {
-			username, err := contrib.GetString("user")
-			if err != nil {
-				continue
-			}
-			// remove the user from the list, now that we know that they have contributed
-			// since the deadline
-			delete(userLookup, username)
-		}
-	}
-	if query.Err() != nil {
-		log.Fatal("Errored while querying user list with error: ", query.Err())
-	}
-
-	// now reformulate the users array with the remaining users, who are all the users
-	// who haven't contributed since the deadline
-	users = make([]string, len(userLookup))
-	i := 0
-	for username := range userLookup {
-		users[i] = username
-		i++
-	}
-
-	return users
 }
 
 // Takes a string, s, and converts the first rune to uppercase
