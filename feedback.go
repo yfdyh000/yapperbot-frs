@@ -32,8 +32,8 @@ import (
 	"github.com/mashedkeyboard/ybtools"
 )
 
-const maxMsgsToSend int = 25
-const minMsgsToSend int = 15
+const maxMsgsToSend int = 15
+const minMsgsToSend int = 5
 
 var commentRegex *regexp.Regexp
 
