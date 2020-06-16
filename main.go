@@ -84,15 +84,6 @@ func main() {
 func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 	var startStamp, startID string
 	var newRunfile bool
-	if !rfcCat {
-		startStamp, startID = loadFromRunfile(category)
-		if startStamp == "" {
-			startStamp = time.Now().Format(time.RFC3339)
-			// Set our runfile to store this now, as there's potentially going to be nothing in the queue
-			newRunfile = true
-		}
-	}
-
 	var parameters params.Values
 
 	if rfcCat {
@@ -106,6 +97,13 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 			"rvslots":   "main",
 		}
 	} else {
+		startStamp, startID = loadFromRunfile(category)
+		if startStamp == "" {
+			startStamp = time.Now().Format(time.RFC3339)
+			// Set our runfile to store this now, as there's potentially going to be nothing in the queue
+			newRunfile = true
+		}
+
 		parameters = params.Values{
 			"action":       "query",
 			"prop":         "revisions|categories",
@@ -122,7 +120,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 		}
 	}
 
-	var firstItem string = ""
+	var firstItem string
 	query := w.NewQuery(parameters)
 
 	for query.Next() {
@@ -130,8 +128,8 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 		if len(pages) > 0 {
 			if !rfcCat {
 				// on the first item of the entire set, and the first item ONLY, save the timestamp and the page id into a var to write to runfile later
-				// RfCs don't use this as there's fewer of them and it's more difficult to get them in timestamp order
-				if len(firstItem) == 0 {
+				// RfCs don't use this as they're given IDs and don't need it
+				if firstItem == "" {
 					var runfileBuilder strings.Builder
 					runfileBuilder.WriteString(ybtools.GetCategorisationTimestampFromPage(pages[0], category))
 					runfileBuilder.WriteString(";")
@@ -140,7 +138,10 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					if err != nil {
 						log.Fatal("Failed to get pageid from the first item in the queue with error message ", err)
 					}
-					runfileBuilder.WriteString(string(firstItemPageID))
+					// Remember to do this! Golang by default turns integers just into the
+					// corresponding unicode sequence with string(n) - e.g. string(5)
+					// returns "\x05"
+					runfileBuilder.WriteString(strconv.FormatInt(firstItemPageID, 10))
 					firstItem = runfileBuilder.String()
 				}
 			}
