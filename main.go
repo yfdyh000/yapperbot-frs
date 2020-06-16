@@ -125,16 +125,31 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 
 	for query.Next() {
 		pages := ybtools.GetPagesFromQuery(query.Resp())
+		// There seems to be no guarantee that the value of pages will be ordered, in any way.
 		if len(pages) > 0 {
 			if !rfcCat {
 				// on the first item of the entire set, and the first item ONLY, save the timestamp and the page id into a var to write to runfile later
 				// RfCs don't use this as they're given IDs and don't need it
 				if firstItem == "" {
+					// because pages is unordered, we have to make a separate, limited request for this
+					// this gets us the first (latest) item
+					firstItemParams := parameters
+					firstItemParams["gcmlimit"] = "1"
+					firstItemResp, err := w.Get(firstItemParams)
+					if err != nil {
+						log.Fatal("Failed to get firstItemResp with err ", err)
+					}
+
+					firstItemRespPages := ybtools.GetPagesFromQuery(firstItemResp)
+					if len(firstItemRespPages) != 1 {
+						log.Fatal("firstItemRespPages returned more than one page! Dying.")
+					}
+
 					var runfileBuilder strings.Builder
-					runfileBuilder.WriteString(ybtools.GetCategorisationTimestampFromPage(pages[0], category))
+					runfileBuilder.WriteString(ybtools.GetCategorisationTimestampFromPage(firstItemRespPages[0], category))
 					runfileBuilder.WriteString(";")
 
-					firstItemPageID, err := pages[0].GetInt64("pageid")
+					firstItemPageID, err := firstItemRespPages[0].GetInt64("pageid")
 					if err != nil {
 						log.Fatal("Failed to get pageid from the first item in the queue with error message ", err)
 					}
