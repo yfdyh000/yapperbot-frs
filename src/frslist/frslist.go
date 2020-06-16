@@ -60,6 +60,7 @@ func init() {
 	userParserRegex = regexp.MustCompile(`(?i){{frs user\|(.*)\|(\d+)}}`)
 
 	randomGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	list = map[string][]FRSUser{}
 	sentCount = map[string]map[string]int16{}
 }
@@ -99,6 +100,10 @@ func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSU
 				checkUserAndIncludeInHeader(user, &pickedusers, header, &users)
 			}
 		} else {
+			// We put this here to make sure we re-generate our random sample every time we need it
+			// This means that, when lots of sends are handled, the random distribution is more fair
+			randomGenerator.Seed(time.Now().UnixNano())
+
 			// get random indexes (.Perm returns a random permutation of 0-(n-1))
 			for _, i := range randomGenerator.Perm(len(list[header])) {
 				if len(users) >= n {
