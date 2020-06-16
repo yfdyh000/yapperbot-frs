@@ -20,6 +20,7 @@ package rfc
 
 import (
 	"log"
+	"reflect"
 	"strings"
 	"yapperbot-frs/src/yapperconfig"
 
@@ -70,25 +71,30 @@ func AlreadyDone(rfcID string) bool {
 // SaveRfcsDone takes an mwclient, and serializes
 // the doneRfcs map, before saving it on-wiki.
 func SaveRfcsDone(w *mwclient.Client) {
-	var rfcsDoneJSONBuilder strings.Builder
-	var rfcsDoneSlice []string = []string{}
+	// Only update the list of RfCs done if it's actually changed -
+	// i.e. if the list of doneRfcs is not deeply equal to the list of
+	// loadedRfcs (bigger, smaller, changed in any way).
+	if !reflect.DeepEqual(doneRfcs, loadedRfcs) {
+		var rfcsDoneJSONBuilder strings.Builder
+		var rfcsDoneSlice []string = []string{}
 
-	for rfcid := range doneRfcs {
-		rfcsDoneSlice = append(rfcsDoneSlice, rfcid)
-	}
+		for rfcid := range doneRfcs {
+			rfcsDoneSlice = append(rfcsDoneSlice, rfcid)
+		}
 
-	rfcsDoneJSONBuilder.WriteString(yapperconfig.OpeningJSON)
-	rfcsDoneJSONBuilder.WriteString(`"rfcsdone":`)
-	rfcsDoneJSONBuilder.WriteString(ybtools.SerializeToJSON(rfcsDoneSlice))
-	rfcsDoneJSONBuilder.WriteString(yapperconfig.ClosingJSON)
+		rfcsDoneJSONBuilder.WriteString(yapperconfig.OpeningJSON)
+		rfcsDoneJSONBuilder.WriteString(`"rfcsdone":`)
+		rfcsDoneJSONBuilder.WriteString(ybtools.SerializeToJSON(rfcsDoneSlice))
+		rfcsDoneJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
-	err := w.Edit(params.Values{
-		"pageid":  yapperconfig.Config.RFCsDonePageID,
-		"summary": "Updating list of completed RfCs",
-		"bot":     "true",
-		"text":    rfcsDoneJSONBuilder.String(),
-	})
-	if err != nil {
-		log.Fatal("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
+		err := w.Edit(params.Values{
+			"pageid":  yapperconfig.Config.RFCsDonePageID,
+			"summary": "Updating list of completed RfCs",
+			"bot":     "true",
+			"text":    rfcsDoneJSONBuilder.String(),
+		})
+		if err != nil {
+			log.Fatal("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
+		}
 	}
 }
