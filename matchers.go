@@ -40,7 +40,7 @@ func init() {
 
 	// GA nom matching regex.
 	// First capture group is the topic. Second capture group is the subtopic.
-	// IMPORTANT: If the topic is empty, the first capture group will be empty string, and likewise for the subtopic.
+	// IMPORTANT: If the subtopic is empty, the first capture group will be empty string, and likewise for the topic.
 	// This regex will always prefer a topic to a subtopic, but will settle for a subtopic if no topic is available.
 	// Great thanks go to Ouims from #regex on Freenode for the help with debugging and correcting this regex!
 	gaMatcher = regexp.MustCompile(`(?i){{GA nominee(?:\|(?:[^|}]*?\|)*(?:[\t\f\v ]*?(?:subtopic=([^|}]+).*?)|topic=([^|}]+))|.*?)*}}`)
@@ -94,6 +94,6 @@ func extractGANom(content string, title string) (nom ga.Nom) {
 	matchedGaTag := gaMatcher.FindStringSubmatch(content)
 	// first capture group is name of topic, if applicable
 	// second capture group is name of subtopic
-	nom = ga.Nom{Topic: matchedGaTag[1], Subtopic: matchedGaTag[2], Article: title}
+	nom = ga.Nom{Topic: matchedGaTag[2], Subtopic: matchedGaTag[1], Article: title}
 	return
 }
