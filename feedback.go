@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"regexp"
 	"strings"
+	"time"
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/rfc"
 
@@ -95,6 +96,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 					if err == nil {
 						log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
 						user.MarkMessageSent(header)
+						time.Sleep(5 * time.Second)
 					} else {
 						switch err.(type) {
 						case mwclient.APIError:
