@@ -39,7 +39,7 @@ const minMsgsToSend int = 5
 var commentRegex *regexp.Regexp
 
 // in the below string, %s represents the header the user was subscribed to
-const editSummaryForFeedbackMsgs string = `A [[WP:FRS|Feedback Request Service]] notification for you, powered by Yapperbot. You're getting this message because you subscribed to "%s". To unsubscribe, just remove yourself from the list.`
+const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on a "%s" %s (%d/%d this month). You can unsubscribe at [[WP:FRS]].`
 
 func init() {
 	commentRegex = regexp.MustCompile(`\s*?<!--.*?-->\s*?`)
@@ -74,12 +74,14 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 
 		for header, users := range headerusers {
 			cleanedHeader := commentRegex.ReplaceAllString(header, "")
-			editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader)
 			sectiontitle := fmt.Sprintf("Feedback request: %s %s", cleanedHeader, requester.RequestType())
 
 			for _, user := range users {
 				// Drop a note on each user's talk page inviting them to participate
 				if ybtools.EditLimit() {
+					// Generate the edit summary, with their limit
+					editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), user.GetCount(header)+1, user.Limit)
+
 					// the redirect param here automatically resolves redirects,
 					// for instance if a user changes their username but forgets
 					// to update the FRS user tag
