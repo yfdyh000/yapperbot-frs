@@ -1,5 +1,5 @@
 # yapperbot-frs
-Bot that will (hopefully, pending approval from the Bot Approvals Group) power the [Feedback Request Service](https://en.wikipedia.org/wiki/WP:FRS) on Wikipedia
+Bot that powers the [Feedback Request Service](https://en.wikipedia.org/wiki/WP:FRS) on Wikipedia
 
 ## Pruning the FRS list
 To remove users who haven't made any contributions in over three years, you can run the "prune" command:
