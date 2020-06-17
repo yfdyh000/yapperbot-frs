@@ -78,7 +78,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 
 			for _, user := range users {
 				// Drop a note on each user's talk page inviting them to participate
-				if ybtools.EditLimit() {
+				if ybtools.CanEdit() {
 					// Generate the edit summary, with their limit
 					editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), user.GetCount(header)+1, user.Limit)
 
@@ -104,14 +104,14 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 						case mwclient.APIError:
 							switch err.(mwclient.APIError).Code {
 							case "noedit", "writeapidenied", "blocked":
-								log.Fatal("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
+								ybtools.PanicErr("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
 							case "pagedeleted":
 								log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
 							default:
 								log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
 							}
 						default:
-							log.Fatal("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
+							ybtools.PanicErr("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
 						}
 					}
 				}

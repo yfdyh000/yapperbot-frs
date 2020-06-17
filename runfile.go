@@ -20,9 +20,9 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"strings"
 
+	"github.com/mashedkeyboard/ybtools"
 	"github.com/metal3d/go-slugify"
 )
 
@@ -35,7 +35,7 @@ func loadFromRunfile(category string) (string, string) {
 		// the runfile doesn't exist probably, try creating it
 		err := ioutil.WriteFile(runfileName, []byte(""), 0644)
 		if err != nil {
-			log.Fatal("Failed to create runfile with error ", err)
+			ybtools.PanicErr("Failed to create runfile with error ", err)
 		}
 		return "", ""
 	}
@@ -47,7 +47,7 @@ func loadFromRunfile(category string) (string, string) {
 	case 2:
 		break
 	default:
-		log.Fatal("Corrupt runfile for category ", category)
+		ybtools.PanicErr("Corrupt runfile for category ", category)
 	}
 
 	return splitStartRunfile[0], splitStartRunfile[1]

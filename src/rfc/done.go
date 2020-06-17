@@ -19,7 +19,6 @@ package rfc
 //
 
 import (
-	"log"
 	"reflect"
 	"strings"
 	"yapperbot-frs/src/yapperconfig"
@@ -46,13 +45,13 @@ func MarkRfcsDone(rfcsDone []RfC) {
 	}
 }
 
-// LoadRfcsDone takes an mwclient and loads the RFCs that have already been marked as done into loadedRfcs.
+// LoadRfcsDone loads the RFCs that have already been marked as done into loadedRfcs.
 // It needs to be called before the start of each session that includes an RfC lookup.
 func LoadRfcsDone(w *mwclient.Client) {
-	rfcsDoneJSON := ybtools.LoadJSONFromPageID(w, yapperconfig.Config.RFCsDonePageID)
+	rfcsDoneJSON := ybtools.LoadJSONFromPageID(yapperconfig.Config.RFCsDonePageID)
 	rfcsDoneList, err := rfcsDoneJSON.GetStringArray("rfcsdone")
 	if err != nil {
-		log.Fatal("rfcsdone not found in rfcsDoneJSON! the JSON looks corrupt.")
+		ybtools.PanicErr("rfcsdone not found in rfcsDoneJSON! the JSON looks corrupt.")
 	}
 	for _, rfcID := range rfcsDoneList {
 		loadedRfcs[rfcID] = true
@@ -94,7 +93,7 @@ func SaveRfcsDone(w *mwclient.Client) {
 			"text":    rfcsDoneJSONBuilder.String(),
 		})
 		if err != nil {
-			log.Fatal("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
+			ybtools.PanicErr("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
 		}
 	}
 }

@@ -19,11 +19,9 @@ package ga
 //
 
 import (
-	"log"
 	"regexp"
 	"yapperbot-frs/src/yapperconfig"
 
-	"cgt.name/pkg/go-mwclient"
 	"github.com/mashedkeyboard/ybtools"
 )
 
@@ -44,11 +42,11 @@ func init() {
 	gaSubtopicRegex = regexp.MustCompile(`\[\[[^|]*\|([^|]*)]]`)
 }
 
-// FetchGATopics takes a mwclient and fetches the latest GA topics from the Good Article noms page.
-func FetchGATopics(w *mwclient.Client) {
-	text, err := ybtools.FetchWikitext(w, yapperconfig.Config.GAGuidelinesHeaderPageID)
+// FetchGATopics fetches the latest GA topics from the Good Article noms page.
+func FetchGATopics() {
+	text, err := ybtools.FetchWikitext(yapperconfig.Config.GAGuidelinesHeaderPageID)
 	if err != nil {
-		log.Fatal("Failed to fetch Good Articles topics with error ", err)
+		ybtools.PanicErr("Failed to fetch Good Articles topics with error ", err)
 	}
 	matches := gaTopicsRegex.FindAllStringSubmatch(text, -1)
 	for _, match := range matches {

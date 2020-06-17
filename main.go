@@ -64,17 +64,17 @@ func main() {
 		scanner.Scan()
 		password := scanner.Text()
 
-		frslist.Prune(w, dbserver, dbuser, password, db)
+		frslist.Prune(dbserver, dbuser, password, db)
 	} else {
 		rand.Seed(time.Now().UnixNano())
 
-		frslist.Populate(w)
+		frslist.Populate()
 		rfc.LoadRfcsDone(w)
 		defer frslist.FinishRun(w)
 		defer rfc.SaveRfcsDone(w)
 		defer ybtools.SaveEditLimit()
 
-		ga.FetchGATopics(w)
+		ga.FetchGATopics()
 
 		queryCategory(w, "Category:Wikipedia requests for comment", true)
 		queryCategory(w, "Category:Good article nominees", false)
@@ -137,12 +137,12 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					firstItemParams["gcmlimit"] = "1"
 					firstItemResp, err := w.Get(firstItemParams)
 					if err != nil {
-						log.Fatal("Failed to get firstItemResp with err ", err)
+						ybtools.PanicErr("Failed to get firstItemResp with err ", err)
 					}
 
 					firstItemRespPages := ybtools.GetPagesFromQuery(firstItemResp)
 					if len(firstItemRespPages) != 1 {
-						log.Fatal("firstItemRespPages returned more than one page! Dying.")
+						ybtools.PanicErr("firstItemRespPages returned more than one page! Dying.")
 					}
 
 					var runfileBuilder strings.Builder
@@ -151,7 +151,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 
 					firstItemPageID, err := firstItemRespPages[0].GetInt64("pageid")
 					if err != nil {
-						log.Fatal("Failed to get pageid from the first item in the queue with error message ", err)
+						ybtools.PanicErr("Failed to get pageid from the first item in the queue with error message ", err)
 					}
 					// Remember to do this! Golang by default turns integers just into the
 					// corresponding unicode sequence with string(n) - e.g. string(5)
@@ -165,7 +165,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 			for index, page := range pages {
 				pageIDInt, err := page.GetInt64("pageid")
 				if err != nil {
-					log.Fatal("Failed to get pageid from page in category ", category, " with index ", index, ", error was: ", err)
+					ybtools.PanicErr("Failed to get pageid from page in category ", category, " with index ", index, ", error was: ", err)
 				}
 				pageID := strconv.FormatInt(pageIDInt, 10) // format it into a string integer
 
@@ -185,7 +185,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 					// (content, title, excludeDone)
 					rfcsToProcess, err := extractRfcs(pageContent, pageTitle, false)
 					if err != nil {
-						log.Fatal("extractRfcs errored with ", err)
+						ybtools.PanicErr("extractRfcs errored with ", err)
 					}
 					rfcsDone := make([]rfc.RfC, 0, len(rfcsToProcess))
 
@@ -226,7 +226,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 	if query.Err() == nil {
 		log.Println("Finished the queue for category", category, "so ending here")
 	} else {
-		log.Fatal("Errored while querying for relevant new pages with error: ", query.Err())
+		ybtools.PanicErr("Errored while querying for relevant new pages with error: ", query.Err())
 	}
 
 	// If it uses a runfile, and there actually is something to write
@@ -234,7 +234,7 @@ func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
 		// Store the done timestamp and page id into the runfile for next use
 		err := ioutil.WriteFile(slugify.Marshal(category)+".frsrunfile", []byte(firstItem), 0644)
 		if err != nil {
-			log.Fatal("Failed to write timestamp and id to runfile")
+			ybtools.PanicErr("Failed to write timestamp and id to runfile")
 		}
 	}
 }

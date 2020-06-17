@@ -66,14 +66,14 @@ func init() {
 }
 
 // Populate sets up the FRSList list as appropriate for the start of the program.
-func Populate(w *mwclient.Client) {
-	populateFrsList(w)
-	populateSentCount(w)
+func Populate() {
+	populateFrsList()
+	populateSentCount()
 }
 
 // Prune starts the user pruning process to remove old users from the FRS list.
-func Prune(w *mwclient.Client, dbserver, dbuser, dbpassword, db string) {
-	pruneUsersFromList(populateFrsList(w), w, dbserver, dbuser, dbpassword, db)
+func Prune(dbserver, dbuser, dbpassword, db string) {
+	pruneUsersFromList(populateFrsList(), dbserver, dbuser, dbpassword, db)
 }
 
 // GetListHeaders is a simple getter for listHeaders
@@ -150,10 +150,10 @@ func FinishRun(w *mwclient.Client) {
 	saveSentCounts(w)
 }
 
-func populateFrsList(w *mwclient.Client) string {
-	text, err := ybtools.FetchWikitext(w, yapperconfig.Config.FRSPageID)
+func populateFrsList() string {
+	text, err := ybtools.FetchWikitext(yapperconfig.Config.FRSPageID)
 	if err != nil {
-		log.Fatal("Failed to fetch and parse FRS page with error ", err)
+		ybtools.PanicErr("Failed to fetch and parse FRS page with error ", err)
 	}
 
 	for _, match := range listParserRegex.FindAllStringSubmatch(text, -1) {
@@ -180,12 +180,12 @@ func populateFrsList(w *mwclient.Client) string {
 	return text
 }
 
-func populateSentCount(w *mwclient.Client) {
+func populateSentCount() {
 	// This is stored on the page with ID sentCountPageID.
 	// It is made up of something that looks like this:
 	// {"month": "2020-05", "headers": {"category": {"username": 8}}}
 	// where username had been sent 8 messages in the month of May 2020 and the header "category".
-	parsedJSON := ybtools.LoadJSONFromPageID(w, yapperconfig.Config.SentCountPageID)
+	parsedJSON := ybtools.LoadJSONFromPageID(yapperconfig.Config.SentCountPageID)
 
 	contentMonth, _ := parsedJSON.GetString("month")
 	// yes, really, you have to specify time formats with a specific time in Go
@@ -222,7 +222,7 @@ func saveSentCounts(w *mwclient.Client) {
 		if err.Error() == "edit successful, but did not change page" {
 			log.Println("WARNING: Successfully updated sentcounts, but they didn't change - if anything was done this session, something is wrong!")
 		} else {
-			log.Fatal("Failed to update sentcounts with error ", err)
+			ybtools.PanicErr("Failed to update sentcounts with error ", err)
 		}
 	}
 	// }

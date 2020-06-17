@@ -10,8 +10,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"cgt.name/pkg/go-mwclient"
-
 	// needs to be blank-imported to make the driver work
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -50,7 +48,7 @@ const userRedirectQueryTemplate string = `SELECT rd_title FROM redirect
 INNER JOIN page ON page_namespace = 3 AND page_title = ? AND rd_from = page_id
 WHERE page_is_redirect = 1 AND rd_namespace = 3 LIMIT 1;`
 
-func pruneUsersFromList(text string, w *mwclient.Client, dbserver, dbuser, dbpassword, db string) {
+func pruneUsersFromList(text string, dbserver, dbuser, dbpassword, db string) {
 	var regexBuilder strings.Builder
 
 	conn, err := sql.Open("mysql", dbuser+":"+dbpassword+"@tcp("+dbserver+")/"+db)
