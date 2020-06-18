@@ -38,8 +38,11 @@ const minMsgsToSend int = 5
 
 var commentRegex *regexp.Regexp
 
-// in the below string, %s represents the header the user was subscribed to
-const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on a "%s" %s (%d/%d this month). You can unsubscribe at [[WP:FRS]].`
+// %s 1: header the user was subscribed to
+// %s 2: the type of request (GA nom, RfC, etc)
+// %s 3: limitInEditSummary, or empty string for no limit
+const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on a "%s" %s%s. You can unsubscribe at [[WP:FRS]].`
+const limitInEditSummary string = ` (%d/%d this month)`
 
 func init() {
 	commentRegex = regexp.MustCompile(`\s*?<!--.*?-->\s*?`)
@@ -80,7 +83,11 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 				// Drop a note on each user's talk page inviting them to participate
 				if ybtools.CanEdit() {
 					// Generate the edit summary, with their limit
-					editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), user.GetCount(header)+1, user.Limit)
+					var limitsummary string
+					if user.Limited {
+						limitsummary = fmt.Sprintf(limitInEditSummary, user.GetCount(header)+1, user.Limit)
+					}
+					editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), limitsummary)
 
 					// the redirect param here automatically resolves redirects,
 					// for instance if a user changes their username but forgets

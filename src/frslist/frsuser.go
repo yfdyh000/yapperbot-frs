@@ -18,10 +18,13 @@ package frslist
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// An FRSUser is a struct representing a user who has signed up for the FRS
+// An FRSUser is a struct representing a user who has signed up for the FRS.
+// A single username may have multiple FRSUser objects; each corresponds to an
+// individual subscription.
 type FRSUser struct {
 	Username string
 	Limit    int16
+	Limited  bool
 }
 
 // GetCount takes a header and gets the number of messages sent for that header this month.
@@ -29,6 +32,15 @@ func (f FRSUser) GetCount(header string) int16 {
 	sentCountMux.Lock()
 	defer sentCountMux.Unlock()
 	return sentCount[header][f.Username]
+}
+
+// ExceedsLimit is a simple helper function for checking if a user is limited,
+// and if they are, whether they can be messaged according to their limits.
+func (f FRSUser) ExceedsLimit(header string) bool {
+	if f.Limited {
+		return (f.GetCount(header) >= f.Limit)
+	}
+	return false
 }
 
 // MarkMessageSent takes a header and increases the number of messages sent for that header by one.

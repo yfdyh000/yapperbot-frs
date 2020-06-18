@@ -57,7 +57,7 @@ func init() {
 	// This regex matches each user individually in a section of the FRS list.
 	// The first group matches the user name
 	// The second group matches the requested limit
-	userParserRegex = regexp.MustCompile(`(?i){{frs user\|(.*)\|(\d+)}}`)
+	userParserRegex = regexp.MustCompile(`(?i){{frs user\|([^|]*)(?:\|(\d+))?}}`)
 
 	randomGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -130,7 +130,7 @@ func checkUserAndIncludeInHeader(user FRSUser, pickedusers *map[string]bool, hea
 
 	(*pickedusers)[user.Username] = true
 
-	if user.GetCount(header) >= user.Limit {
+	if user.ExceedsLimit(header) {
 		// user has exceeded limit, or this message would cause them to exceed the limit; ignore them and move on
 		return
 	}
@@ -161,10 +161,17 @@ func populateFrsList() string {
 		var users []FRSUser
 		for _, usermatched := range userParserRegex.FindAllStringSubmatch(match[2], -1) {
 			// usermatched is [entire match, user name, requested limit]
-			if limit, err := strconv.ParseInt(usermatched[2], 10, 16); err == nil {
-				users = append(users, FRSUser{usermatched[1], int16(limit)})
+			if usermatched[2] != "" {
+				// The user has a limit set
+				if limit, err := strconv.ParseInt(usermatched[2], 10, 16); err == nil {
+					users = append(users, FRSUser{Username: usermatched[1], Limit: int16(limit), Limited: true})
+				} else {
+					log.Println("User", usermatched[1], "has an invalid limit of", usermatched[2], "so ignoring")
+				}
 			} else {
-				log.Println("User", usermatched[1], "has an invalid limit of", usermatched[2], "so ignoring")
+				// The user does not have a set limit
+				// we only need to set the username; bool default is false, and numeric default is zero
+				users = append(users, FRSUser{Username: usermatched[1]})
 			}
 		}
 		list[match[1]] = users
