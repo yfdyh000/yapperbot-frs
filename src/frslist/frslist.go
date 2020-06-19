@@ -30,7 +30,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 )
 
 // list is the overall list of FRSUsers mapped to their headers.
@@ -215,22 +215,25 @@ func saveSentCounts(w *mwclient.Client) {
 	sentCountJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
 	// this is in userspace, and it's really desperately necessary - do not count this for edit limiting
-	// if yapperconfig.EditLimit() {
-	err := w.Edit(params.Values{
-		"pageid":   yapperconfig.Config.SentCountPageID,
-		"summary":  "FRS run complete, updating sentcounts",
-		"notminor": "true",
-		"bot":      "true",
-		"text":     sentCountJSONBuilder.String(),
-	})
-	if err == nil {
-		log.Println("Successfully updated sentcounts")
-	} else {
-		if err.Error() == "edit successful, but did not change page" {
-			log.Println("WARNING: Successfully updated sentcounts, but they didn't change - if anything was done this session, something is wrong!")
+	// for the same reason, we have no maxlag wait - we need this to run under all circumstances, to ensure
+	// that people's limits are respected
+	ybtools.NoMaxlagDo(func() (err error) {
+		err = w.Edit(params.Values{
+			"pageid":   yapperconfig.Config.SentCountPageID,
+			"summary":  "FRS run complete, updating sentcounts",
+			"notminor": "true",
+			"bot":      "true",
+			"text":     sentCountJSONBuilder.String(),
+		})
+		if err == nil {
+			log.Println("Successfully updated sentcounts")
 		} else {
-			ybtools.PanicErr("Failed to update sentcounts with error ", err)
+			if err.Error() == "edit successful, but did not change page" {
+				log.Println("WARNING: Successfully updated sentcounts, but they didn't change - if anything was done this session, something is wrong!")
+			} else {
+				ybtools.PanicErr("Failed to update sentcounts with error ", err)
+			}
 		}
-	}
-	// }
+		return
+	}, w)
 }

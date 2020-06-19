@@ -20,7 +20,7 @@ package frslist
 
 import (
 	"github.com/antonholmquist/jason"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 )
 
 func deserializeSentCount(json *jason.Object) (sc map[string]map[string]int16) {

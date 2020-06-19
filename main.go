@@ -35,12 +35,12 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 	"github.com/metal3d/go-slugify"
 )
 
 func init() {
-	ybtools.SetupBot("FRS", "Yapperbot")
+	ybtools.SetupBot(ybtools.BotSettings{TaskName: "FRS", BotUser: "Yapperbot"})
 	ybtools.ParseTaskConfig(&yapperconfig.Config)
 }
 
@@ -56,7 +56,7 @@ func main() {
 	flag.StringVar(&db, "db", "", "Database to prune against")
 	flag.Parse()
 
-	w := ybtools.CreateAndAuthenticateClient()
+	w := ybtools.CreateAndAuthenticateClient(ybtools.DefaultMaxlag)
 
 	if prune {
 		scanner := bufio.NewScanner(os.Stdin)

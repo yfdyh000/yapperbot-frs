@@ -37,8 +37,12 @@ type Nom struct {
 func (n Nom) IncludeHeader(header string) bool {
 	// TrimPrefix does nothing if the prefix isn't there, so this is fine
 	headerSansPrefix := strings.TrimPrefix(header, gaPrefix)
-	// if it's the topic, or the subtopic's respective topic from a gaTopics lookup
-	if headerSansPrefix == n.Topic || (gaTopics[n.Subtopic] != "" && headerSansPrefix == gaTopics[n.Subtopic]) {
+
+	// if it's the topic, or the subtopic's respective topic from a gaTopics lookup, return true.
+	// "Music" on the tag turns into "Other music articles" on the headers... makes sense from a human perspective
+	// in the context, but it's frustrating for automated work :D We'll check matched subtopics against headers then,
+	// too
+	if headerSansPrefix == n.Topic || headerSansPrefix == n.Subtopic || (gaTopics[n.Subtopic] != "" && headerSansPrefix == gaTopics[n.Subtopic]) {
 		return true
 	}
 	return false

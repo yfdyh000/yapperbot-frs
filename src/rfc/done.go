@@ -25,7 +25,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 )
 
 // doneRfcs maps found this session and completed/already-completed
@@ -86,14 +86,20 @@ func SaveRfcsDone(w *mwclient.Client) {
 		rfcsDoneJSONBuilder.WriteString(ybtools.SerializeToJSON(rfcsDoneSlice))
 		rfcsDoneJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
-		err := w.Edit(params.Values{
-			"pageid":  yapperconfig.Config.RFCsDonePageID,
-			"summary": "Updating list of completed RfCs",
-			"bot":     "true",
-			"text":    rfcsDoneJSONBuilder.String(),
-		})
-		if err != nil {
-			ybtools.PanicErr("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
-		}
+		// Updating this list must be done under all circumstances; we cannot
+		// wait for maxlag here, it's important that this is kept valid and correct
+		// to prevent us sending multiple messages.
+		ybtools.NoMaxlagDo(func() (err error) {
+			err = w.Edit(params.Values{
+				"pageid":  yapperconfig.Config.RFCsDonePageID,
+				"summary": "Updating list of completed RfCs",
+				"bot":     "true",
+				"text":    rfcsDoneJSONBuilder.String(),
+			})
+			if err != nil {
+				ybtools.PanicErr("Failed to update RfC page ", yapperconfig.Config.RFCsDonePageID, " to list completed RfCs, with error ", err)
+			}
+			return
+		}, w)
 	}
 }
