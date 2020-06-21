@@ -71,11 +71,6 @@ func Populate() {
 	populateSentCount()
 }
 
-// Prune starts the user pruning process to remove old users from the FRS list.
-func Prune(dbserver, dbuser, dbpassword, db string) {
-	pruneUsersFromList(populateFrsList(), dbserver, dbuser, dbpassword, db)
-}
-
 // GetListHeaders is a simple getter for listHeaders
 func GetListHeaders() []string {
 	return listHeaders

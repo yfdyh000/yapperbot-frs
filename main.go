@@ -19,12 +19,9 @@ package main
 //
 
 import (
-	"bufio"
-	"flag"
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -45,40 +42,20 @@ func init() {
 }
 
 func main() {
-	var prune bool
-	var dbserver string
-	var dbuser string
-	var db string
-
-	flag.BoolVar(&prune, "prune", false, "Prune old users that no longer exist")
-	flag.StringVar(&dbserver, "dbserver", "", "DB server for pruning against")
-	flag.StringVar(&dbuser, "dbuser", "", "DB user to connect to server for pruning")
-	flag.StringVar(&db, "db", "", "Database to prune against")
-	flag.Parse()
-
 	w := ybtools.CreateAndAuthenticateClient(ybtools.DefaultMaxlag)
 
-	if prune {
-		scanner := bufio.NewScanner(os.Stdin)
-		log.Print("Enter DB password: ")
-		scanner.Scan()
-		password := scanner.Text()
+	rand.Seed(time.Now().UnixNano())
 
-		frslist.Prune(dbserver, dbuser, password, db)
-	} else {
-		rand.Seed(time.Now().UnixNano())
+	frslist.Populate()
+	rfc.LoadRfcsDone(w)
+	defer frslist.FinishRun(w)
+	defer rfc.SaveRfcsDone(w)
+	defer ybtools.SaveEditLimit()
 
-		frslist.Populate()
-		rfc.LoadRfcsDone(w)
-		defer frslist.FinishRun(w)
-		defer rfc.SaveRfcsDone(w)
-		defer ybtools.SaveEditLimit()
+	ga.FetchGATopics()
 
-		ga.FetchGATopics()
-
-		queryCategory(w, "Category:Wikipedia requests for comment", true)
-		queryCategory(w, "Category:Good article nominees", false)
-	}
+	queryCategory(w, "Category:Wikipedia requests for comment", true)
+	queryCategory(w, "Category:Good article nominees", false)
 }
 
 func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
