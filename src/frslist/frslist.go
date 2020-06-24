@@ -156,7 +156,11 @@ func populateFrsList() string {
 		var users []FRSUser
 		for _, usermatched := range userParserRegex.FindAllStringSubmatch(match[2], -1) {
 			// usermatched is [entire match, user name, requested limit]
-			if usermatched[2] != "" {
+			if usermatched[2] == "0" {
+				// The user has explicitly requested no limit
+				// we only need to set the username; bool default is false, and numeric default is zero
+				users = append(users, FRSUser{Username: usermatched[1]})
+			} else if usermatched[2] != "" {
 				// The user has a limit set
 				if limit, err := strconv.ParseInt(usermatched[2], 10, 16); err == nil {
 					users = append(users, FRSUser{Username: usermatched[1], Limit: int16(limit), Limited: true})
@@ -165,8 +169,8 @@ func populateFrsList() string {
 				}
 			} else {
 				// The user does not have a set limit
-				// we only need to set the username; bool default is false, and numeric default is zero
-				users = append(users, FRSUser{Username: usermatched[1]})
+				// Use the default value of 1
+				users = append(users, FRSUser{Username: usermatched[1], Limit: 1, Limited: true})
 			}
 		}
 		list[match[1]] = users
