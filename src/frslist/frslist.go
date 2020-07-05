@@ -317,7 +317,7 @@ func saveSentCounts(w *mwclient.Client) {
 	sentCountJSONBuilder.WriteString(yapperconfig.OpeningJSON)
 	sentCountJSONBuilder.WriteString(`"month":"`)
 	sentCountJSONBuilder.WriteString(time.Now().Format("2006-01"))
-	sentCountJSONBuilder.WriteString(`,"headers":`)
+	sentCountJSONBuilder.WriteString(`","headers":`)
 	sentCountJSONBuilder.WriteString(ybtools.SerializeToJSON(sentCount))
 	sentCountJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
