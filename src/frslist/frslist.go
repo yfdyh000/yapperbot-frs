@@ -183,14 +183,14 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 	// Calculate cumulative sent counts for the users
 	var cumulativeSentCount float64
 
-	for index, user := range weightedUsers {
+	for _, user := range weightedUsers {
 		// take the reciprocal of the weight, and use it cumulatively.
 		// we do this here to ensure that our sent counts are used
 		// as a decentive for sending new messages.
 		cumulativeSentCount += 1 / user.weight
 		weight := float64(cumulativeSentCount)
 
-		weightedUsers[index].weight = weight
+		user.weight = weight
 	}
 
 	// Reseed to avoid getting the same or similar sequences every time
@@ -201,8 +201,8 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 	var i = 0
 	for i < n {
 		// adjust our random value to be within our bounds - going up to the
-		// cumulative sent count final value
-		randomValue := randomGenerator.Float64() * cumulativeSentCount
+		// final weight as a maximum value possible
+		randomValue := randomGenerator.Float64() * weightedUsers[len(weightedUsers)-1].weight
 
 		selectedUserIndex := sort.Search(len(weightedUsers), func(i int) bool {
 			// find the smallest weight user whose weight is greater than our random selection
