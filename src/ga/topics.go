@@ -25,9 +25,13 @@ import (
 	"github.com/mashedkeyboard/ybtools/v2"
 )
 
-// gaTopics is a map in the form {"subtopic": "topic"}
+// gaTopics is a map storing the Good Article topics in the form {"subtopic": "topic"}
 var gaTopics map[string]string
+
+// gaTopicsRegex matches each GA topic from the on-wiki list of GA topics.
 var gaTopicsRegex *regexp.Regexp
+
+// gaSubtopicRegex matches each GA subtopic from within a topic on the on-wiki list of GA topics.
 var gaSubtopicRegex *regexp.Regexp
 
 func init() {

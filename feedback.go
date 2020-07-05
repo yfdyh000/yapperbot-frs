@@ -36,6 +36,8 @@ import (
 const maxMsgsToSend int = 15
 const minMsgsToSend int = 5
 
+// commentRegex matches HTML comments, allowing us to remove them;
+// we use it to clean our headers before we send to users.
 var commentRegex *regexp.Regexp
 
 // %s 1: header the user was subscribed to

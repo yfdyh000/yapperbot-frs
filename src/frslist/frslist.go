@@ -35,8 +35,10 @@ import (
 )
 
 // list is the overall list of FRSUsers mapped to their headers.
-// listHeaders is just a boring old list of headers, we have a getter for it later.
 var list map[string][]*FRSUser
+
+// listHeaders is just a boring old list of headers, we have a getter for it later.
+// It's used to keep track of which headers we have.
 var listHeaders []string
 
 // frsWeightedUser extends FRSUser to add a weighting component. It's only used here.
@@ -46,13 +48,18 @@ type frsWeightedUser struct {
 }
 
 // sentCount maps headers down to users, and then users down to the number of messages they've received this month.
-// the Mux is just a mux for it in case the app gets goroutines at some point.
 var sentCount map[string]map[string]uint16 // {header: {user: count sent}}
+// sentCountMux is a simple mutex to make sure that, if we ever add goroutines, we don't start overwriting
+// SentCount simultaneously.
 var sentCountMux sync.Mutex
 
+// listParserRegex looks at the Feedback Request Service list, and finds each header and its users.
 var listParserRegex *regexp.Regexp
+
+// userParserRegex looks over the contents of a FRS list header, and finds each user within the header.
 var userParserRegex *regexp.Regexp
 
+// randomGenerator is our random number generator for this function, separated so we can separately seed it.
 var randomGenerator *rand.Rand
 
 func init() {

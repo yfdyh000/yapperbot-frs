@@ -26,7 +26,12 @@ import (
 	"github.com/metal3d/go-slugify"
 )
 
-func loadFromRunfile(category string) (string, string) {
+// loadFromRunfile takes a category name, and loads the applicable .frsrunfile file, if there is one.
+// The .frsrunfile file stores the timestamp of the last processed page in the category, and its page ID.
+// This is used to track our progress through the category, and prevent us from sending messages about the
+// same page twice.
+// The function returns the timestamp and the page ID, both as strings.
+func loadFromRunfile(category string) (timestamp, pageID string) {
 	var startRunfile []byte
 	// runfile stores the last categorisation timestamp
 	runfileName := slugify.Marshal(category) + ".frsrunfile"

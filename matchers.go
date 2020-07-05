@@ -25,8 +25,17 @@ import (
 	"yapperbot-frs/src/rfc"
 )
 
+// rfcMatcher is a regex that matches {{rfc}} templates on pages.
+// Its contents are documented in matchers.go:init().
 var rfcMatcher *regexp.Regexp
+
+// gaMatcher is a regex that matches {{GA nominee}} templates on pages.
+// Its contents are documented in matchers.go:init().
 var gaMatcher *regexp.Regexp
+
+// namedParamMatcher is a regex that matches against named parameters in
+// a template parameter list; e.g. {{template|name=param}}, matching name=param.
+// Its contents are documented in matchers.go:init().
 var namedParamMatcher *regexp.Regexp
 
 const rfcIDParam string = "rfcid="
