@@ -40,10 +40,14 @@ const minMsgsToSend int = 5
 // we use it to clean our headers before we send to users.
 var commentRegex *regexp.Regexp
 
+// editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it with:
 // %s 1: header the user was subscribed to
 // %s 2: the type of request (GA nom, RfC, etc)
 // %s 3: limitInEditSummary, or empty string for no limit
 const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on a "%s" %s%s. You can unsubscribe at [[WP:FRS]].`
+
+// limitInEditSummary is used where users have a limit set.
+// Sprintf is run over it with the first param as the used amount, and the second as the limit.
 const limitInEditSummary string = ` (%d/%d this month)`
 
 func init() {
