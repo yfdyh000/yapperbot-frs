@@ -18,7 +18,10 @@ package yapperconfig
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// this doesn't include EditLimit, which is handled by ybtools
+// configObject is the local implementation of ybtools' configuration.
+// each of these keys are just pulled straight from the config-frs yml file
+// in the application directory by ybtools.
+// this doesn't include EditLimit, which is handled by ybtools directly
 type configObject struct {
 	FRSPageID                string
 	SentCountPageID          string

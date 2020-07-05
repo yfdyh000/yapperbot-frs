@@ -22,6 +22,7 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,12 +36,18 @@ import (
 
 // list is the overall list of FRSUsers mapped to their headers.
 // listHeaders is just a boring old list of headers, we have a getter for it later.
-var list map[string][]FRSUser
+var list map[string][]*FRSUser
 var listHeaders []string
+
+// frsWeightedUser extends FRSUser to add a weighting component. It's only used here.
+type frsWeightedUser struct {
+	*FRSUser
+	weight float64
+}
 
 // sentCount maps headers down to users, and then users down to the number of messages they've received this month.
 // the Mux is just a mux for it in case the app gets goroutines at some point.
-var sentCount map[string]map[string]int16 // {header: {user: count sent}}
+var sentCount map[string]map[string]uint16 // {header: {user: count sent}}
 var sentCountMux sync.Mutex
 
 var listParserRegex *regexp.Regexp
@@ -61,8 +68,8 @@ func init() {
 
 	randomGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	list = map[string][]FRSUser{}
-	sentCount = map[string]map[string]int16{}
+	list = map[string][]*FRSUser{}
+	sentCount = map[string]map[string]uint16{}
 }
 
 // Populate sets up the FRSList list as appropriate for the start of the program.
@@ -77,67 +84,153 @@ func GetListHeaders() []string {
 }
 
 // GetUsersFromHeaders takes a list of headers and an integer number of users n, and returns a randomly selected portion of the users
-// from each header, with each header of size n. It won't pick the same user twice.
-func GetUsersFromHeaders(headers []string, n int) (headerusers map[string][]FRSUser) {
-	// maps header to array of users
-	headerusers = map[string][]FRSUser{}
-	// maps user to true if used - used for o(1) lookups of the user to check if already included under any header
-	pickedusers := map[string]bool{}
+// from the headers, with a total size of maximum n. It won't pick the same user twice, and weights the users based on how far through their limit
+// they are, in an attempt to spread things out a bit. It may pick less than n if there are less users available.
+func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUsers []*FRSUser) {
+	var weightedUsers []*frsWeightedUser
+	// used to check in o(1) time whether we've already
+	// selected this user, just on another header
+	var usersSelected = map[string]bool{}
 
+	// start our returnedUsers off with a zero-length slice of cap n
+	returnedUsers = make([]*FRSUser, 0, n)
+
+	// unlimitedUsers stores all of our users who have no limit set.
+	// calculatedWeights stores all of the weights that we have otherwise
+	// calculated.
+	// these two are used to later calculate the median of the calculated weights,
+	// and set each of the unlimited users to be weighted the same as the median.
+	var unlimitedUsers []*frsWeightedUser
+	var calculatedWeights []float64
+
+	// Get a list of all the eligible users in the header
 	for _, header := range headers {
-		users := make([]FRSUser, 0, n)
+		for _, user := range list[header] {
+			if !user.ExceedsLimit() {
+				var weight float64
+				if user.Limited {
+					if user.GetCount() == 0 {
+						// if the user has not been sent anything, prioritise them for
+						// sending; this seems a reasonable way of weighting
+						weight = 0
+					} else {
+						// the user has been sent something, and has a limit set.
+						// weight them on the basis of their relative position
+						// within their limit. this means users with a higher limit
+						// will be more likely to receive more messages than users
+						// with a lower limit, and vice versa;
+						// however, it also keeps users with high limits from receiving
+						// all the messages, when other users are lacking anything sent.
+						weight = float64(user.GetCount()) / float64(user.Limit)
+					}
+					// if the all header is set, give those users half the probability of receiving the message.
+					// we should try and make sure our messages are being sent to specific categories more of the time,
+					// but we should still make sure users under the all headers receive messages.
+					// this needs to be done here so that they are ordered correctly; as we're later inverting the probabilities,
+					// the weight also has to be doubled, not halved, counterintuitively
+					if allHeader != "" && user.Header == allHeader {
+						weight = weight * float64(2)
+					}
 
-		if len(list[header]) <= n {
-			// very small list, or very large n
-			// just give the entire list after checking for user limits
-			for _, user := range list[header] {
-				// what happens with this doesn't matter here, as we're literally just adding all qualifying users
-				checkUserAndIncludeInHeader(user, &pickedusers, header, &users)
-			}
-		} else {
-			// We put this here to make sure we re-generate our random sample every time we need it
-			// This means that, when lots of sends are handled, the random distribution is more fair
-			randomGenerator.Seed(time.Now().UnixNano())
-
-			// get random indexes (.Perm returns a random permutation of 0-(n-1))
-			for _, i := range randomGenerator.Perm(len(list[header])) {
-				if len(users) >= n {
-					// we've already picked the number requested, stop picking
-					break
+					// shift each weight forward by 1 to avoid issues with dividing by zero, and to avoid
+					// zero probabilities; we want users with no current sent messages to be top-priority,
+					// definitely not zero priority
+					weightedUsers = append(weightedUsers, &frsWeightedUser{FRSUser: user, weight: weight + 1})
+				} else {
+					// if the user has no limit set, add them to unlimitedUsers; we'll set their weight to the median later
+					unlimitedUsers = append(unlimitedUsers, &frsWeightedUser{FRSUser: user})
 				}
-				checkUserAndIncludeInHeader(list[header][i], &pickedusers, header, &users)
 			}
 		}
+	}
 
-		headerusers[header] = users
+	// If there are any users in the header who have no limits set, set their weighting to the median of the limited users
+	if len(unlimitedUsers) > 0 {
+		median, hasMedian := calculateMedian(calculatedWeights)
+		if !hasMedian {
+			// if all users are unlimited, then just set their weights to 1 -
+			// they're all the same anyway then, so it doesn't make a difference
+			median = 1
+		}
+		for _, user := range unlimitedUsers {
+			user.weight = median
+			weightedUsers = append(weightedUsers, user)
+		}
+	}
+
+	// Check if we actually have an opportunity to randomly select at all here
+	if len(weightedUsers) <= n {
+		// very small list, or very large n
+		// just give the entire list
+		for _, wuser := range weightedUsers {
+			returnedUsers = append(returnedUsers, wuser.FRSUser)
+		}
+		return
+	}
+
+	// Sort the list into increasing order of sent count this month
+	sort.Slice(weightedUsers, func(i, j int) bool {
+		return weightedUsers[i].weight < weightedUsers[j].weight
+	})
+
+	// Calculate cumulative sent counts for the users
+	var cumulativeSentCount float64
+
+	for index, user := range weightedUsers {
+		// take the reciprocal of the weight, and use it cumulatively.
+		// we do this here to ensure that our sent counts are used
+		// as a decentive for sending new messages.
+		cumulativeSentCount += 1 / user.weight
+		weight := float64(cumulativeSentCount)
+
+		weightedUsers[index].weight = weight
+	}
+
+	// Reseed to avoid getting the same or similar sequences every time
+	// when we have large batches
+	randomGenerator.Seed(time.Now().UnixNano())
+
+	// Select a random user each time based on our weights
+	var i = 0
+	for i < n {
+		// adjust our random value to be within our bounds - going up to the
+		// cumulative sent count final value
+		randomValue := randomGenerator.Float64() * cumulativeSentCount
+
+		selectedUserIndex := sort.Search(len(weightedUsers), func(i int) bool {
+			// find the smallest weight user whose weight is greater than our random selection
+			return weightedUsers[i].weight > randomValue
+		})
+
+		if selectedUserIndex > len(weightedUsers)-1 {
+			// the selection index hasn't been found; this is probably because we've exhausted our search somehow
+			// just return what we've got, and mark in the log that this happened - it shouldn't ever happen
+			log.Println("WARNING: Exhausted search space for selectedUserIndex, returning what we can get: asked for", n, "and got", len(returnedUsers))
+			return
+		}
+
+		// make sure we haven't already picked this user
+		if !usersSelected[weightedUsers[selectedUserIndex].Username] {
+			// assuming we haven't, add them to our list...
+			returnedUsers = append(returnedUsers, weightedUsers[selectedUserIndex].FRSUser)
+			// mark them as picked...
+			usersSelected[weightedUsers[selectedUserIndex].Username] = true
+			// and increase the number of users we've picked up to n
+			i++
+		}
+
+		// make sure we're not keeping the same users around, potentially selecting them
+		// multiple times
+		if selectedUserIndex+1 == len(weightedUsers) {
+			// this is the end of the slice; just chop the end off
+			weightedUsers = weightedUsers[:selectedUserIndex]
+		} else {
+			// we need to chop this element, and only this element, out
+			weightedUsers = append(weightedUsers[:selectedUserIndex], weightedUsers[selectedUserIndex+1:]...)
+		}
 	}
 
 	return
-}
-
-// takes a user, a pickedusers map, the header, and the list of users
-// checks if the user is eligible for inclusion and if they are, adds them to pickedusers and users
-func checkUserAndIncludeInHeader(user FRSUser, pickedusers *map[string]bool, header string, users *[]FRSUser) {
-	if (*pickedusers)[user.Username] {
-		// if the user is already included, skip it
-		return
-	}
-
-	(*pickedusers)[user.Username] = true
-
-	if user.ExceedsLimit(header) {
-		// user has exceeded limit, or this message would cause them to exceed the limit; ignore them and move on
-		return
-	}
-
-	// user is good to go! expand the slice...
-	// expanding the slice in here means we need a pointer to a slice, not just the slice.
-	// if it was just the slice, it would update the elements in the underlying array; however,
-	// we're changing the length, which means changing the slice itself, which needs a pointer
-	oldlen := len(*users)
-	*users = (*users)[:oldlen+1] // oldlen+1 expands the length by 1, the slice notation here uses length, not index
-	// ... and add them to the list! (oldlen is now the last key of the new slice)
-	(*users)[oldlen] = user
 }
 
 // FinishRun for now just calls saveSentCounts, but could do something else too in future
@@ -145,6 +238,9 @@ func FinishRun(w *mwclient.Client) {
 	saveSentCounts(w)
 }
 
+// populateFrsList fetches the wikitext of the FRS subscriptions page, and processes the page against
+// the listParserRegex and userParserRegex. Together, those parse the headers in the file, along with
+// the users that are subscribed, turning them into FRSUser objects and storing them in `list`.
 func populateFrsList() string {
 	text, err := ybtools.FetchWikitext(yapperconfig.Config.FRSPageID)
 	if err != nil {
@@ -153,24 +249,24 @@ func populateFrsList() string {
 
 	for _, match := range listParserRegex.FindAllStringSubmatch(text, -1) {
 		// match is [entire match, header, contents]
-		var users []FRSUser
+		var users []*FRSUser
 		for _, usermatched := range userParserRegex.FindAllStringSubmatch(match[2], -1) {
 			// usermatched is [entire match, user name, requested limit]
 			if usermatched[2] == "0" {
 				// The user has explicitly requested no limit
 				// we only need to set the username; bool default is false, and numeric default is zero
-				users = append(users, FRSUser{Username: usermatched[1]})
+				users = append(users, &FRSUser{Username: usermatched[1], Header: match[1]})
 			} else if usermatched[2] != "" {
 				// The user has a limit set
 				if limit, err := strconv.ParseInt(usermatched[2], 10, 16); err == nil {
-					users = append(users, FRSUser{Username: usermatched[1], Limit: int16(limit), Limited: true})
+					users = append(users, &FRSUser{Username: usermatched[1], Header: match[1], Limit: uint16(limit), Limited: true})
 				} else {
 					log.Println("User", usermatched[1], "has an invalid limit of", usermatched[2], "so ignoring")
 				}
 			} else {
 				// The user does not have a set limit
 				// Use the default value of 1
-				users = append(users, FRSUser{Username: usermatched[1], Limit: 1, Limited: true})
+				users = append(users, &FRSUser{Username: usermatched[1], Header: match[1], Limit: 1, Limited: true})
 			}
 		}
 		list[match[1]] = users
@@ -186,6 +282,9 @@ func populateFrsList() string {
 	return text
 }
 
+// populateSentCount fetches the SentCount page, and checks it's of the right month.
+// If it's a previous month, then it just leaves the `sentCount` map blank; if it's
+// the same month listed on the JSON file, it will parse the JSON and load it into `sentCount`.
 func populateSentCount() {
 	// This is stored on the page with ID sentCountPageID.
 	// It is made up of something that looks like this:
@@ -204,12 +303,14 @@ func populateSentCount() {
 	}
 }
 
+// saveSentCounts serializes our `sentCount` map into JSON, so we can save it on-wiki
+// and load it again when we need to for the next run.
 func saveSentCounts(w *mwclient.Client) {
 	var sentCountJSONBuilder strings.Builder
 	sentCountJSONBuilder.WriteString(yapperconfig.OpeningJSON)
 	sentCountJSONBuilder.WriteString(`"month":"`)
 	sentCountJSONBuilder.WriteString(time.Now().Format("2006-01"))
-	sentCountJSONBuilder.WriteString(`","headers":`)
+	sentCountJSONBuilder.WriteString(`,"headers":`)
 	sentCountJSONBuilder.WriteString(ybtools.SerializeToJSON(sentCount))
 	sentCountJSONBuilder.WriteString(yapperconfig.ClosingJSON)
 
@@ -235,4 +336,18 @@ func saveSentCounts(w *mwclient.Client) {
 		}
 		return
 	}, w)
+}
+
+// calculateMedian takes a slice of float64s and returns the median if there is one, and a bool indicating if a median
+// could be calculated (i.e. if the given slice has a length greater than zero).
+func calculateMedian(calculatedWeights []float64) (float64, bool) {
+	if len(calculatedWeights) > 0 {
+		sort.Float64s(calculatedWeights)
+		middleIndex := len(calculatedWeights) / 2
+		if len(calculatedWeights)%2 == 0 {
+			return (calculatedWeights[middleIndex-1] + calculatedWeights[middleIndex]) / 2, true
+		}
+		return calculatedWeights[middleIndex], true
+	}
+	return 0, false
 }

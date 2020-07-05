@@ -23,14 +23,18 @@ import (
 	"github.com/mashedkeyboard/ybtools/v2"
 )
 
-func deserializeSentCount(json *jason.Object) (sc map[string]map[string]int16) {
-	sc = map[string]map[string]int16{} // initialise the map
+// deserializeSentCount takes a jason JSON object containing the SentCount.json
+// information, and adds the sent counts into a map, mapping headers to usernames
+// and usernames to numbers of messages sent. It returns this map as a
+// map[string]map[string]uint16.
+func deserializeSentCount(json *jason.Object) (sc map[string]map[string]uint16) {
+	sc = map[string]map[string]uint16{} // initialise the map
 	headers, err := json.GetObject("headers")
 	if err != nil {
 		ybtools.PanicErr("Failed to deserialize sent count headers, is the JSON invalid?")
 	}
 	for header, users := range headers.Map() {
-		sc[header] = map[string]int16{} // initialise the submap
+		sc[header] = map[string]uint16{} // initialise the submap
 
 		users, err := users.Object()
 		if err != nil {
@@ -42,8 +46,8 @@ func deserializeSentCount(json *jason.Object) (sc map[string]map[string]int16) {
 				ybtools.PanicErr("count wasn't a valid number, I can't handle this! the JSON seems invalid.")
 			}
 			// this never needs to be an int64, it's just that the library doesn't have arbitrary size int handling
-			// converting it back down to int16 at least saves a little memory in the long run, not that it hugely matters
-			sc[header][user] = int16(count)
+			// converting it back down to uint16 at least saves a little memory in the long run, not that it hugely matters
+			sc[header][user] = uint16(count)
 		}
 	}
 	return

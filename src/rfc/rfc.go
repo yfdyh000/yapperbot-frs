@@ -20,6 +20,8 @@ package rfc
 
 import "regexp"
 
+// rfcPrefixRegex is a regex that matches the comments at the start of each RfC line;
+// these are in the form <!--rfc:categoryname-->, and mean the bot can match it.
 var rfcPrefixRegex *regexp.Regexp
 
 const requestType string = "request for comment"
@@ -39,21 +41,23 @@ func init() {
 }
 
 // IncludeHeader determines if a given FRS header corresponds to this item correctly
-// Takes a string of the entire header (minus the === bits) and returns true or false
-func (r RfC) IncludeHeader(header string) bool {
+// Takes a string of the entire header (minus the === bits) and returns a bool for
+// if the header is included, and separately a bool indicating whether the header is the all
+// header or not
+func (r RfC) IncludeHeader(header string) (bool, bool) {
 	matches := rfcPrefixRegex.FindStringSubmatch(header)
 	if matches == nil {
 		// no matches means it's not an RfC
-		return false
+		return false, false
 	}
 
 	// check for special keyword "all"
 	if matches[1] == "all" {
-		return true
+		return true, true
 	}
 	// check if in categories
 	_, exists := r.Categories[matches[1]]
-	return exists
+	return exists, false
 }
 
 // PageTitle is a simple getter for the HoldingPage in order to make the interface work

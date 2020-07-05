@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+// gaPrefix is just used for lopping off the starting comment from a GA nom;
+// we don't do any extra processing with it at the moment.
 const gaPrefix string = "<!--gan-->"
 const requestType string = "Good Article nomination"
 
@@ -33,8 +35,10 @@ type Nom struct {
 }
 
 // IncludeHeader determines if a given FRS header corresponds to this item correctly
-// Takes a string of the entire header (minus the === bits) and returns true or false
-func (n Nom) IncludeHeader(header string) bool {
+// Takes a string of the entire header (minus the === bits) and returns a bool for
+// if the header is included, and separately a bool indicating whether the header is the all
+// header or not. At present, the second bool is always false, as there is no all header for GA.
+func (n Nom) IncludeHeader(header string) (bool, bool) {
 	// TrimPrefix does nothing if the prefix isn't there, so this is fine
 	headerSansPrefix := strings.TrimPrefix(header, gaPrefix)
 
@@ -43,9 +47,9 @@ func (n Nom) IncludeHeader(header string) bool {
 	// in the context, but it's frustrating for automated work :D We'll check matched subtopics against headers then,
 	// too
 	if headerSansPrefix == n.Topic || headerSansPrefix == n.Subtopic || (gaTopics[n.Subtopic] != "" && headerSansPrefix == gaTopics[n.Subtopic]) {
-		return true
+		return true, false
 	}
-	return false
+	return false, false
 }
 
 // PageTitle is a simple getter for the GA nominee article in order to make the interface work

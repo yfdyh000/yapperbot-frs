@@ -54,11 +54,14 @@ func main() {
 
 	ga.FetchGATopics()
 
-	queryCategory(w, "Category:Wikipedia requests for comment", true)
-	queryCategory(w, "Category:Good article nominees", false)
+	processCategory(w, "Category:Wikipedia requests for comment", true)
+	processCategory(w, "Category:Good article nominees", false)
 }
 
-func queryCategory(w *mwclient.Client, category string, rfcCat bool) {
+// processCategory takes a mwclient instance, a category name, and a bool indicating if the category contains RfCs.
+// it then iterates through the pages in the category, checking whether they've already been processed; if they've not,
+// and they're applicable, they'll be sent for a feedback request. This is the main program loop.
+func processCategory(w *mwclient.Client, category string, rfcCat bool) {
 	var startStamp, startID string
 	var newRunfile bool
 	var parameters params.Values

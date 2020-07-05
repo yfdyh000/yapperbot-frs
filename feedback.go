@@ -48,20 +48,26 @@ func init() {
 	commentRegex = regexp.MustCompile(`\s*?<!--.*?-->\s*?`)
 }
 
+// requestFeedbackFor takes an object that implements frsRequesting and a mwclient instance,
+// and processes the feedback request for the frsRequesting object.
 func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 	var msgsToSend int = (rand.Intn(maxMsgsToSend-minMsgsToSend) + minMsgsToSend) // evaluates out to any number between max and min
 	// it's important that this is a separate array, as we later consider its length
 	var headersToSendTo []string
+	var allHeader string
 
 	for _, header := range frslist.GetListHeaders() {
-		if requester.IncludeHeader(header) {
+		include, isAllHeader := requester.IncludeHeader(header)
+		if include {
 			headersToSendTo = append(headersToSendTo, header)
+		}
+		if isAllHeader {
+			allHeader = header
 		}
 	}
 
 	if len(headersToSendTo) > 0 {
-		var messagesPerHeader int = msgsToSend / len(headersToSendTo) // auto-rounds down where needed, as they're integers
-		headerusers := frslist.GetUsersFromHeaders(headersToSendTo, messagesPerHeader)
+		users := frslist.GetUsersFromHeaders(headersToSendTo, allHeader, msgsToSend)
 
 		var textBuilder strings.Builder
 		textBuilder.WriteString("{{subst:User:Yapperbot/FRS notification|title=")
@@ -75,51 +81,49 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 		textBuilder.WriteString("}} ~~~~")
 		var notificationText string = textBuilder.String()
 
-		for header, users := range headerusers {
-			cleanedHeader := commentRegex.ReplaceAllString(header, "")
+		for _, user := range users {
+			cleanedHeader := commentRegex.ReplaceAllString(user.Header, "")
 			sectiontitle := fmt.Sprintf("Feedback request: %s %s", cleanedHeader, requester.RequestType())
 
-			for _, user := range users {
-				// Drop a note on each user's talk page inviting them to participate
-				if ybtools.CanEdit() {
-					// Generate the edit summary, with their limit
-					var limitsummary string
-					if user.Limited {
-						limitsummary = fmt.Sprintf(limitInEditSummary, user.GetCount(header)+1, user.Limit)
-					}
-					editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), limitsummary)
+			// Drop a note on each user's talk page inviting them to participate
+			if ybtools.CanEdit() {
+				// Generate the edit summary, with their limit
+				var limitsummary string
+				if user.Limited {
+					limitsummary = fmt.Sprintf(limitInEditSummary, user.GetCount()+1, user.Limit)
+				}
+				editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), limitsummary)
 
-					// the redirect param here automatically resolves redirects,
-					// for instance if a user changes their username but forgets
-					// to update the FRS user tag
-					err := w.Edit(params.Values{
-						"title":        "User talk:" + user.Username,
-						"section":      "new",
-						"sectiontitle": sectiontitle,
-						"summary":      editsummary,
-						"notminor":     "true",
-						"bot":          "true",
-						"text":         notificationText,
-						"redirect":     "true",
-					})
-					if err == nil {
-						log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
-						user.MarkMessageSent(header)
-						time.Sleep(5 * time.Second)
-					} else {
-						switch err.(type) {
-						case mwclient.APIError:
-							switch err.(mwclient.APIError).Code {
-							case "noedit", "writeapidenied", "blocked":
-								ybtools.PanicErr("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
-							case "pagedeleted":
-								log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
-							default:
-								log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
-							}
+				// the redirect param here automatically resolves redirects,
+				// for instance if a user changes their username but forgets
+				// to update the FRS user tag
+				err := w.Edit(params.Values{
+					"title":        "User talk:" + user.Username,
+					"section":      "new",
+					"sectiontitle": sectiontitle,
+					"summary":      editsummary,
+					"notminor":     "true",
+					"bot":          "true",
+					"text":         notificationText,
+					"redirect":     "true",
+				})
+				if err == nil {
+					log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
+					user.MarkMessageSent()
+					time.Sleep(5 * time.Second)
+				} else {
+					switch err.(type) {
+					case mwclient.APIError:
+						switch err.(mwclient.APIError).Code {
+						case "noedit", "writeapidenied", "blocked":
+							ybtools.PanicErr("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
+						case "pagedeleted":
+							log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
 						default:
-							ybtools.PanicErr("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
+							log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
 						}
+					default:
+						ybtools.PanicErr("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
 					}
 				}
 			}

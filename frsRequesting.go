@@ -21,7 +21,11 @@ package main
 // frsRequesting is an interface covering all objects that could request FRS.
 // At the moment, that's only ga.Nom and rfc.RfC
 type frsRequesting interface {
-	IncludeHeader(string) bool
+	// IncludeHeader returns a bool indicating if the header is applicable for the
+	// requesting instance, and also a bool indicating if the header is the catch-all
+	// for the requester.
+	IncludeHeader(string) (headerShouldBeIncluded bool, headerIsAllHeader bool)
+
 	PageTitle() string
 	RequestType() string
 }
