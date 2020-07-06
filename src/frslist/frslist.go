@@ -41,10 +41,30 @@ var list map[string][]*FRSUser
 // It's used to keep track of which headers we have.
 var listHeaders []string
 
-// frsWeightedUser extends FRSUser to add a weighting component. It's only used here.
+// frsWeightedUser extends FRSUser to add a weighting component. It's only used within frslist.
 type frsWeightedUser struct {
 	*FRSUser
+	// weight will represent our probability for this user to be selected
 	weight float64
+	// _hasAllHeaderChecked is a simple boolean check to make sure we don't halve the probability twice
+	_hasAllHeaderChecked bool
+}
+
+// checkWeightForAllHeader takes a string representation of the "All [type]s" header, and checks whether
+// the frsWeightedUser is contained within that header. If it is, it will halve the user's weighting, to
+// encourage users subscribed to specific categories to be selected.
+func (u *frsWeightedUser) checkWeightForAllHeader(allHeader string) {
+	if !u._hasAllHeaderChecked {
+		// if the all header is set, give those users half the probability of receiving the message.
+		// we should try and make sure our messages are being sent to specific categories more of the time,
+		// but we should still make sure users under the all headers receive messages.
+		// this needs to be done here so that they are ordered correctly; as we're later inverting the probabilities,
+		// the weight also has to be doubled, not halved, counterintuitively
+		if allHeader != "" && u.Header == allHeader {
+			u.weight = u.weight * 2
+		}
+		u._hasAllHeaderChecked = true
+	}
 }
 
 // sentCount maps headers down to users, and then users down to the number of messages they've received this month.
@@ -136,19 +156,17 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 					// definitely not zero priority
 					weight = weight + 1
 
-					// if the all header is set, give those users half the probability of receiving the message.
-					// we should try and make sure our messages are being sent to specific categories more of the time,
-					// but we should still make sure users under the all headers receive messages.
-					// this needs to be done here so that they are ordered correctly; as we're later inverting the probabilities,
-					// the weight also has to be doubled, not halved, counterintuitively
-					if allHeader != "" && user.Header == allHeader {
-						weight = weight * float64(2)
-					}
-
-					weightedUsers = append(weightedUsers, &frsWeightedUser{FRSUser: user, weight: weight})
+					// check the user for inclusion in the allHeader, halve their probability if they are,
+					// and then append them to the list of users
+					wUser := &frsWeightedUser{FRSUser: user, weight: weight}
+					wUser.checkWeightForAllHeader(allHeader)
+					weightedUsers = append(weightedUsers, wUser)
 				} else {
-					// if the user has no limit set, add them to unlimitedUsers; we'll set their weight to the median later
-					unlimitedUsers = append(unlimitedUsers, &frsWeightedUser{FRSUser: user})
+					// if the user has no limit set, add them to unlimitedUsers as well as weightedUsers;
+					// we'll set their weight to the median weight later
+					wUser := &frsWeightedUser{FRSUser: user}
+					unlimitedUsers = append(unlimitedUsers, wUser)
+					weightedUsers = append(weightedUsers, wUser)
 				}
 			}
 		}
@@ -164,7 +182,9 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 		}
 		for _, user := range unlimitedUsers {
 			user.weight = median
-			weightedUsers = append(weightedUsers, user)
+			// even for unlimited users, we want to give people in specific category headers more of a chance,
+			// so we should still run the AllHeader weight check here
+			user.checkWeightForAllHeader(allHeader)
 		}
 	}
 
