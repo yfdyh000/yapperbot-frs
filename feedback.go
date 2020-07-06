@@ -19,45 +19,17 @@ package main
 //
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
-	"regexp"
-	"strings"
-	"time"
 	"yapperbot-frs/src/frslist"
+	"yapperbot-frs/src/messages"
 	"yapperbot-frs/src/rfc"
 
 	"cgt.name/pkg/go-mwclient"
-	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools/v2"
 )
 
 const maxMsgsToSend int = 15
 const minMsgsToSend int = 5
-
-// commentRegex matches HTML comments, allowing us to remove them;
-// we use it to clean our headers before we send to users.
-var commentRegex *regexp.Regexp
-
-// cleanedHeaders is a map mapping our "dirty" headers (those containing
-// the HTML comments) to cleaned versions, that have had comments removed
-// using the commentRegex.
-var cleanedHeaders = map[string]string{}
-
-// editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it with:
-// %s 1: header the user was subscribed to
-// %s 2: the type of request (GA nom, RfC, etc)
-// %s 3: limitInEditSummary, or empty string for no limit
-const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on a "%s" %s%s. You can unsubscribe at [[WP:FRS]].`
-
-// limitInEditSummary is used where users have a limit set.
-// Sprintf is run over it with the first param as the used amount, and the second as the limit.
-const limitInEditSummary string = ` (%d/%d this month)`
-
-func init() {
-	commentRegex = regexp.MustCompile(`\s*?<!--.*?-->\s*?`)
-}
 
 // requestFeedbackFor takes an object that implements frsRequesting and a mwclient instance,
 // and processes the feedback request for the frsRequesting object.
@@ -77,79 +49,27 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 		include, isAllHeader := requester.IncludeHeader(header)
 		if include {
 			headersToSendTo = append(headersToSendTo, header)
-			// check if we've already cleaned the header previously
-			if _, ok := cleanedHeaders[header]; !ok {
-				// we've not done it previously!
-				// clean the header and save it here, so we don't have to run a regex on every user
-				cleanedHeaders[header] = commentRegex.ReplaceAllString(header, "")
-			}
+			messages.CleanHeader(header)
 		}
 		if isAllHeader {
 			allHeader = header
 		}
 	}
 
+	var rfcid string
+	if rfc, isRfC := requester.(rfc.RfC); isRfC {
+		rfcid = rfc.ID
+	}
+
 	if len(headersToSendTo) > 0 {
 		users := frslist.GetUsersFromHeaders(headersToSendTo, allHeader, msgsToSend)
-
-		var textBuilder strings.Builder
-		textBuilder.WriteString("{{subst:User:Yapperbot/FRS notification|title=")
-		textBuilder.WriteString(requester.PageTitle())
-		textBuilder.WriteString("|type=")
-		textBuilder.WriteString(requester.RequestType())
-		if rfc, isRfC := requester.(rfc.RfC); isRfC {
-			textBuilder.WriteString("|rfcid=")
-			textBuilder.WriteString(rfc.ID)
-		}
-		textBuilder.WriteString("}} ~~~~")
-		var notificationText string = textBuilder.String()
-
 		for _, user := range users {
-			cleanedHeader := cleanedHeaders[user.Header]
-			sectiontitle := fmt.Sprintf("Feedback request: %s %s", cleanedHeader, requester.RequestType())
-
-			// Drop a note on each user's talk page inviting them to participate
-			if ybtools.CanEdit() {
-				// Generate the edit summary, with their limit
-				var limitsummary string
-				if user.Limited {
-					limitsummary = fmt.Sprintf(limitInEditSummary, user.GetCount()+1, user.Limit)
-				}
-				editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, cleanedHeader, requester.RequestType(), limitsummary)
-
-				// the redirect param here automatically resolves redirects,
-				// for instance if a user changes their username but forgets
-				// to update the FRS user tag
-				err := w.Edit(params.Values{
-					"title":        "User talk:" + user.Username,
-					"section":      "new",
-					"sectiontitle": sectiontitle,
-					"summary":      editsummary,
-					"notminor":     "true",
-					"bot":          "true",
-					"text":         notificationText,
-					"redirect":     "true",
-				})
-				if err == nil {
-					log.Println("Successfully invited", user.Username, "to give feedback on page", requester.PageTitle())
-					user.MarkMessageSent()
-					time.Sleep(5 * time.Second)
-				} else {
-					switch err.(type) {
-					case mwclient.APIError:
-						switch err.(mwclient.APIError).Code {
-						case "noedit", "writeapidenied", "blocked":
-							ybtools.PanicErr("noedit/writeapidenied/blocked code returned, the bot may have been blocked. Dying")
-						case "pagedeleted":
-							log.Println("Looks like the user", user.Username, "talk page was deleted while we were updating it... huh. Going for a new one!")
-						default:
-							log.Println("Error editing user talk for", user.Username, "meant they couldn't be notified and were ignored. The error was", err)
-						}
-					default:
-						ybtools.PanicErr("Non-API error returned when trying to notify user ", user.Username, " so dying. Error was ", err)
-					}
-				}
-			}
+			messages.QueueMessage(&messages.Message{
+				User:  user,
+				Type:  requester.RequestType(),
+				Title: requester.PageTitle(),
+				RFCID: rfcid,
+			})
 		}
 	} else {
 		log.Println("WARNING: Headers to send to returned as less than one for page", requester.PageTitle(), "so ignoring for now, but this could be a bug")

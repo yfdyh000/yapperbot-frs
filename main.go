@@ -27,6 +27,7 @@ import (
 	"time"
 	"yapperbot-frs/src/frslist"
 	"yapperbot-frs/src/ga"
+	"yapperbot-frs/src/messages"
 	"yapperbot-frs/src/rfc"
 	"yapperbot-frs/src/yapperconfig"
 
@@ -56,6 +57,10 @@ func main() {
 
 	processCategory(w, "Category:Wikipedia requests for comment", true)
 	processCategory(w, "Category:Good article nominees", false)
+	// this below line is critical to run, because without it nothing will actually be sent;
+	// however, we do NOT want to defer it, because if we do, it would still run on panicks.
+	// if something has gone wrong, we don't want to send messages, so we oughtn't run this.
+	messages.SendMessageQueue(w)
 }
 
 // processCategory takes a mwclient instance, a category name, and a bool indicating if the category contains RfCs.
