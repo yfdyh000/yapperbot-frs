@@ -62,17 +62,27 @@ func init() {
 // requestFeedbackFor takes an object that implements frsRequesting and a mwclient instance,
 // and processes the feedback request for the frsRequesting object.
 func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
-	var msgsToSend int = (rand.Intn(maxMsgsToSend-minMsgsToSend) + minMsgsToSend) // evaluates out to any number between max and min
+	// msgsToSend is a randomly-selected number of messages we want to send out.
+	// it evaluates out to any number between max and min
+	var msgsToSend int = (rand.Intn(maxMsgsToSend-minMsgsToSend) + minMsgsToSend)
+
+	// headersToSendTo will be our slice of headers that we want to consider users in.
 	// it's important that this is a separate array, as we later consider its length
 	var headersToSendTo []string
+
+	// allHeader is the header that's "catch all" for all RfCs/GA noms/whatever, where applicable
 	var allHeader string
 
 	for _, header := range frslist.GetListHeaders() {
 		include, isAllHeader := requester.IncludeHeader(header)
 		if include {
 			headersToSendTo = append(headersToSendTo, header)
-			// Clean the header and save it here, so we don't have to run a regex on every user
-			cleanedHeaders[header] = commentRegex.ReplaceAllString(header, "")
+			// check if we've already cleaned the header previously
+			if _, ok := cleanedHeaders[header]; !ok {
+				// we've not done it previously!
+				// clean the header and save it here, so we don't have to run a regex on every user
+				cleanedHeaders[header] = commentRegex.ReplaceAllString(header, "")
+			}
 		}
 		if isAllHeader {
 			allHeader = header
