@@ -130,6 +130,12 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 						// all the messages, when other users are lacking anything sent.
 						weight = float64(user.GetCount()) / float64(user.Limit)
 					}
+
+					// shift each weight forward by 1 to avoid issues with dividing by zero, and to avoid
+					// zero probabilities; we want users with no current sent messages to be top-priority,
+					// definitely not zero priority
+					weight = weight + 1
+
 					// if the all header is set, give those users half the probability of receiving the message.
 					// we should try and make sure our messages are being sent to specific categories more of the time,
 					// but we should still make sure users under the all headers receive messages.
@@ -139,10 +145,7 @@ func GetUsersFromHeaders(headers []string, allHeader string, n int) (returnedUse
 						weight = weight * float64(2)
 					}
 
-					// shift each weight forward by 1 to avoid issues with dividing by zero, and to avoid
-					// zero probabilities; we want users with no current sent messages to be top-priority,
-					// definitely not zero priority
-					weightedUsers = append(weightedUsers, &frsWeightedUser{FRSUser: user, weight: weight + 1})
+					weightedUsers = append(weightedUsers, &frsWeightedUser{FRSUser: user, weight: weight})
 				} else {
 					// if the user has no limit set, add them to unlimitedUsers; we'll set their weight to the median later
 					unlimitedUsers = append(unlimitedUsers, &frsWeightedUser{FRSUser: user})
