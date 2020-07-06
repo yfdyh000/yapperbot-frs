@@ -40,6 +40,11 @@ const minMsgsToSend int = 5
 // we use it to clean our headers before we send to users.
 var commentRegex *regexp.Regexp
 
+// cleanedHeaders is a map mapping our "dirty" headers (those containing
+// the HTML comments) to cleaned versions, that have had comments removed
+// using the commentRegex.
+var cleanedHeaders = map[string]string{}
+
 // editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it with:
 // %s 1: header the user was subscribed to
 // %s 2: the type of request (GA nom, RfC, etc)
@@ -66,6 +71,8 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 		include, isAllHeader := requester.IncludeHeader(header)
 		if include {
 			headersToSendTo = append(headersToSendTo, header)
+			// Clean the header and save it here, so we don't have to run a regex on every user
+			cleanedHeaders[header] = commentRegex.ReplaceAllString(header, "")
 		}
 		if isAllHeader {
 			allHeader = header
@@ -88,7 +95,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 		var notificationText string = textBuilder.String()
 
 		for _, user := range users {
-			cleanedHeader := commentRegex.ReplaceAllString(user.Header, "")
+			cleanedHeader := cleanedHeaders[user.Header]
 			sectiontitle := fmt.Sprintf("Feedback request: %s %s", cleanedHeader, requester.RequestType())
 
 			// Drop a note on each user's talk page inviting them to participate
