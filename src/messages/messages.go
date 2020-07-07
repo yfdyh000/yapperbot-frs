@@ -30,6 +30,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
+	"github.com/gertd/go-pluralize"
 	"github.com/mashedkeyboard/ybtools/v2"
 )
 
@@ -45,6 +46,31 @@ type Message struct {
 	RFCID string
 }
 
+// headerForMessageSending is a struct used to deduplicate the headers we put in our
+// edit summary, and to produce sanely pluralised values there. It stores the number
+// of messages we've sent this run for the header, along with the FRSUser object.
+type headerForMessageSending struct {
+	countThisRun uint16
+	user         *frslist.FRSUser
+	headerType   string
+}
+
+// editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it
+// with the appropriately-formatted values we get back from editSummaryMessagesComponent, joined together with
+// a limitInEditSummary formatted as necessary if the user has a limit set for the category.
+const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on %s. You can unsubscribe at [[WP:FRS]].`
+
+// editSummaryMessagesComponent contains the core part of our edit summary. We run Sprintf over it with:
+// %s 1: determiner "a" or "some" depending on if we have plural
+// %s 2: header the user was subscribed to
+// %s 3: the type of request (GA nom, RfC, etc), pluralised if necessary
+// %s 4: limitInEditSummary, or empty string for no limit
+const editSummaryMessagesComponent string = `%s "%s" %s%s`
+
+// limitInEditSummary is used where users have a limit set.
+// Sprintf is run over it with the first param as the used amount, and the second as the limit.
+const limitInEditSummary string = ` (%d/%d this month)`
+
 // messagesToSend is our username-indexed list of messages that we have queued.
 // Each username key maps to a list of messages we have stored up to send them this run.
 var messagesToSend = map[string][]*Message{}
@@ -58,23 +84,14 @@ var commentRegex *regexp.Regexp
 // using the commentRegex.
 var cleanedHeaders = map[string]string{}
 
-// editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it
-// with the appropriately-formatted values we get back from editSummaryMessagesComponent, joined together with
-// a limitInEditSummary formatted as necessary if the user has a limit set for the category.
-const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on %s. You can unsubscribe at [[WP:FRS]].`
-
-// editSummaryMessagesComponent contains the core part of our edit summary. We run Sprintf over it with:
-// %s 1: header the user was subscribed to
-// %s 2: the type of request (GA nom, RfC, etc)
-// %s 3: limitInEditSummary, or empty string for no limit
-const editSummaryMessagesComponent string = `a "%s" %s%s`
-
-// limitInEditSummary is used where users have a limit set.
-// Sprintf is run over it with the first param as the used amount, and the second as the limit.
-const limitInEditSummary string = ` (%d/%d this month)`
+// pluralizer is used to turn singular words into plurals; specifically,
+// we use it here to pluralise the GA/RfC/whatever requester headers
+// in the edit summary we leave.
+var pluralizer *pluralize.Client
 
 func init() {
 	commentRegex = regexp.MustCompile(`\s*?<!--.*?-->\s*?`)
+	pluralizer = pluralize.NewClient()
 }
 
 // QueueMessage takes a pointer to a Message, and adds it into our queue
@@ -82,38 +99,45 @@ func init() {
 // sending the messages that we've processed.
 func QueueMessage(m *Message) {
 	messagesToSend[m.User.Username] = append(messagesToSend[m.User.Username], m)
+	m.User.MarkMessageSent()
 }
 
 // SendMessageQueue takes a pointer to an mwclient instance, and sends all the queued
 // messages from the FRS run.
 func SendMessageQueue(w *mwclient.Client) {
 	for user, messages := range messagesToSend {
-		var textBuilder *strings.Builder
-		var summarySentListBuilder strings.Builder
+		var textBuilder strings.Builder
 
-		textBuilder.WriteString("{{subst:User:Yapperbot/FRS notification")
+		// headersInSummary is just used to make sure our edit summary only has each header once.
+		// it maps each header for the summary to a number of times the header has been used.
+		// each header should be stored against its ''cleaned'' key, not its internal name.
+		var headersInSummary = map[string]*headerForMessageSending{}
+
+		textBuilder.WriteString("{{subst:FRS notification")
 
 		for index, message := range messages {
 			strindex := strconv.Itoa(index)
-			numberedParamToBuilder(textBuilder, strindex, "title")
+			cleanedHeader := cleanedHeaders[message.User.Header]
+			numberedParamToBuilder(&textBuilder, strindex, "title")
 			textBuilder.WriteString(message.Title)
-			numberedParamToBuilder(textBuilder, strindex, "type")
+			numberedParamToBuilder(&textBuilder, strindex, "header")
+			textBuilder.WriteString(cleanedHeader)
+			numberedParamToBuilder(&textBuilder, strindex, "type")
 			textBuilder.WriteString(message.Type)
 			if message.RFCID != "" {
-				numberedParamToBuilder(textBuilder, strindex, "rfcid")
+				numberedParamToBuilder(&textBuilder, strindex, "rfcid")
 				textBuilder.WriteString(message.RFCID)
 			}
 
-			var limitsummary string
-			if message.User.Limited {
-				limitsummary = fmt.Sprintf(limitInEditSummary, message.User.GetCount()+1, message.User.Limit)
-			}
-			summarySentListBuilder.WriteString(fmt.Sprintf(editSummaryMessagesComponent, message.User.Header, message.Type, limitsummary))
-
-			if len(messages) > 1 && index != len(messages)-1 {
-				summarySentListBuilder.WriteString(", ")
-				if index == len(messages)-2 {
-					summarySentListBuilder.WriteString("and ")
+			if header, ok := headersInSummary[cleanedHeader]; ok {
+				// we already have the header in the list. use it.
+				header.countThisRun++
+			} else {
+				// the header hasn't yet been used, create it
+				headersInSummary[cleanedHeader] = &headerForMessageSending{
+					countThisRun: 1,
+					user:         message.User,
+					headerType:   message.Type,
 				}
 			}
 		}
@@ -131,6 +155,38 @@ func SendMessageQueue(w *mwclient.Client) {
 
 		// Drop a note on each user's talk page inviting them to participate
 		if ybtools.CanEdit() {
+			var summarySentListBuilder strings.Builder
+			var index int
+			for headerName, header := range headersInSummary {
+				var limitsummary string
+				if header.user.Limited {
+					limitsummary = fmt.Sprintf(limitInEditSummary, header.user.GetCount(), header.user.Limit)
+				}
+
+				determiner := "a"
+				if header.countThisRun > 1 {
+					determiner = "some"
+					header.headerType = pluralizer.Plural(header.headerType)
+				}
+
+				summarySentListBuilder.WriteString(fmt.Sprintf(
+					editSummaryMessagesComponent,
+					determiner,
+					headerName,
+					header.headerType,
+					limitsummary,
+				))
+
+				if len(messages) > 1 && index != len(messages)-1 {
+					summarySentListBuilder.WriteString(", ")
+					if index == len(messages)-2 {
+						// penultimate
+						summarySentListBuilder.WriteString("and ")
+					}
+				}
+				index++
+			}
+
 			// Generate the edit summary, with their limit
 			editsummary := fmt.Sprintf(editSummaryForFeedbackMsgs, summarySentListBuilder.String())
 
@@ -149,9 +205,6 @@ func SendMessageQueue(w *mwclient.Client) {
 			})
 			if err == nil {
 				log.Println("Successfully invited", user, "to give feedback on", len(messages), "requesting items")
-				for _, message := range messages {
-					message.User.MarkMessageSent()
-				}
 				time.Sleep(5 * time.Second)
 			} else {
 				switch err.(type) {
@@ -166,6 +219,9 @@ func SendMessageQueue(w *mwclient.Client) {
 					}
 				default:
 					ybtools.PanicErr("Non-API error returned when trying to notify user ", user, " so dying. Error was ", err)
+				}
+				for _, message := range messages {
+					message.User.MarkMessageUnsent()
 				}
 			}
 		}

@@ -44,7 +44,8 @@ func (f FRSUser) ExceedsLimit() bool {
 	return false
 }
 
-// MarkMessageSent takes a header and increases the number of messages sent for that header by one.
+// MarkMessageSent increases the number of messages sent for the user by one. It's
+// intended for use at the point of queueing a message.
 func (f FRSUser) MarkMessageSent() {
 	sentCountMux.Lock()
 	defer sentCountMux.Unlock()
@@ -55,4 +56,18 @@ func (f FRSUser) MarkMessageSent() {
 	}
 
 	sentCount[f.Header][f.Username]++
+}
+
+// MarkMessageUnsent decreases the number of messages sent for the user by one. It
+// should only be used if something goes wrong while we're sending a message to the user.
+func (f FRSUser) MarkMessageUnsent() {
+	sentCountMux.Lock()
+	defer sentCountMux.Unlock()
+
+	// prevent nil map errors
+	if sentCount[f.Header] == nil {
+		return
+	}
+
+	sentCount[f.Header][f.Username]--
 }

@@ -49,18 +49,13 @@ func main() {
 
 	frslist.Populate()
 	rfc.LoadRfcsDone(w)
-	defer frslist.FinishRun(w)
-	defer rfc.SaveRfcsDone(w)
 	defer ybtools.SaveEditLimit()
 
 	ga.FetchGATopics()
 
 	processCategory(w, "Category:Wikipedia requests for comment", true)
 	processCategory(w, "Category:Good article nominees", false)
-	// this below line is critical to run, because without it nothing will actually be sent;
-	// however, we do NOT want to defer it, because if we do, it would still run on panicks.
-	// if something has gone wrong, we don't want to send messages, so we oughtn't run this.
-	messages.SendMessageQueue(w)
+	finishRun(w)
 }
 
 // processCategory takes a mwclient instance, a category name, and a bool indicating if the category contains RfCs.
@@ -222,4 +217,20 @@ func processCategory(w *mwclient.Client, category string, rfcCat bool) {
 			ybtools.PanicErr("Failed to write timestamp and id to runfile")
 		}
 	}
+}
+
+// finishRun is called at the end of the FRS run, once everything has completed successfully.
+// The invocation of finishRun is what starts the message queue processing. This is only a
+// separate function really so that we can scope the frslist FinishRun and rfc SaveRfcsDone
+// defers into here; this means that if something goes awfully wrong somewhere else in the
+// program, we don't end up saving rubbish data after having sent nothing at all, but
+// it also means if something goes wrong in the actual sending, the lists are kept up to date.
+func finishRun(w *mwclient.Client) {
+	defer frslist.FinishRun(w)
+	defer rfc.SaveRfcsDone(w)
+
+	// this below line is critical to run, because without it nothing will actually be sent;
+	// however, we do NOT want to defer it, because if we do, it would still run on panicks.
+	// if something has gone wrong, we don't want to send messages, so we oughtn't run this.
+	messages.SendMessageQueue(w)
 }

@@ -70,6 +70,7 @@ func requestFeedbackFor(requester frsRequesting, w *mwclient.Client) {
 				Title: requester.PageTitle(),
 				RFCID: rfcid,
 			})
+			log.Println("Queued a message for", user.Username, "to give feedback on", requester.PageTitle(), "in", user.Header)
 		}
 	} else {
 		log.Println("WARNING: Headers to send to returned as less than one for page", requester.PageTitle(), "so ignoring for now, but this could be a bug")
