@@ -25,7 +25,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 )
 
 // doneRfcs maps found this session and completed/already-completed

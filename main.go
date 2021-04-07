@@ -33,7 +33,7 @@ import (
 
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
-	"github.com/mashedkeyboard/ybtools"
+	"github.com/mashedkeyboard/ybtools/v2"
 	"github.com/metal3d/go-slugify"
 )
 
