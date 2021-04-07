@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/mashedkeyboard/ybtools/v2"
+	"github.com/yfdyh000/ybtools/v2"
 	"github.com/metal3d/go-slugify"
 )
 

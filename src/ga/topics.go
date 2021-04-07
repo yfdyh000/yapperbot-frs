@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"yapperbot-frs/src/yapperconfig"
 
-	"github.com/mashedkeyboard/ybtools/v2"
+	"github.com/yfdyh000/ybtools/v2"
 )
 
 // gaTopics is a map storing the Good Article topics in the form {"subtopic": "topic"}
