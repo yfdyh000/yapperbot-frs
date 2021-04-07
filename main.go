@@ -38,7 +38,7 @@ import (
 )
 
 func init() {
-	ybtools.SetupBot(ybtools.BotSettings{TaskName: "FRS", BotUser: "Yapperbot"})
+	ybtools.SetupBot(ybtools.BotSettings{TaskName: "FRS", BotUser: "YFdyh-bot"})
 	ybtools.ParseTaskConfig(&yapperconfig.Config)
 }
 
@@ -51,10 +51,10 @@ func main() {
 	rfc.LoadRfcsDone(w)
 	defer ybtools.SaveEditLimit()
 
-	ga.FetchGATopics()
+	// ga.FetchGATopics()
 
-	processCategory(w, "Category:Wikipedia requests for comment", true)
-	processCategory(w, "Category:Good article nominees", false)
+	processCategory(w, "Category:維基百科請求評論", true)
+	//processCategory(w, "Category:Good article nominees", false)
 	finishRun(w)
 }
 

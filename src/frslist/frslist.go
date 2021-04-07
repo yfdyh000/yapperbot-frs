@@ -350,7 +350,7 @@ func saveSentCounts(w *mwclient.Client) {
 	ybtools.NoMaxlagDo(func() (err error) {
 		err = w.Edit(params.Values{
 			"pageid":   yapperconfig.Config.SentCountPageID,
-			"summary":  "FRS run complete, updating sentcounts",
+			"summary":  "FRS运行完成，更新sentcounts",
 			"notminor": "true",
 			"bot":      "true",
 			"text":     sentCountJSONBuilder.String(),

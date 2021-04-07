@@ -58,7 +58,7 @@ type headerForMessageSending struct {
 // editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it
 // with the appropriately-formatted values we get back from editSummaryMessagesComponent, joined together with
 // a limitInEditSummary formatted as necessary if the user has a limit set for the category.
-const editSummaryForFeedbackMsgs string = `[[WP:FRS|Feedback Request Service]] notification on %s. You can unsubscribe at [[WP:FRS]].`
+const editSummaryForFeedbackMsgs string = `[[WP:FRS|回饋請求服務]]通知于%s。如需退订请至[[WP:FRS]]。`
 
 // editSummaryMessagesComponent contains the core part of our edit summary. We run Sprintf over it with:
 // %s 1: determiner "a" or "some" depending on if we have plural
@@ -69,7 +69,7 @@ const editSummaryMessagesComponent string = `%s "%s" %s%s`
 
 // limitInEditSummary is used where users have a limit set.
 // Sprintf is run over it with the first param as the used amount, and the second as the limit.
-const limitInEditSummary string = ` (%d/%d this month)`
+const limitInEditSummary string = `（本月第%d/%d次）`
 
 // messagesToSend is our username-indexed list of messages that we have queued.
 // Each username key maps to a list of messages we have stored up to send them this run.
@@ -148,9 +148,9 @@ func SendMessageQueue(w *mwclient.Client) {
 		var sectiontitle string
 		if len(messages) == 1 {
 			cleanedHeader := cleanedHeaders[messages[0].User.Header]
-			sectiontitle = fmt.Sprintf("Feedback request: %s %s", cleanedHeader, messages[0].Type)
+			sectiontitle = fmt.Sprintf("请求反馈：%s %s", cleanedHeader, messages[0].Type)
 		} else {
-			sectiontitle = "Feedback requests from the Feedback Request Service"
+			sectiontitle = "回饋請求服務来信"
 		}
 
 		// Drop a note on each user's talk page inviting them to participate
@@ -163,9 +163,9 @@ func SendMessageQueue(w *mwclient.Client) {
 					limitsummary = fmt.Sprintf(limitInEditSummary, header.user.GetCount(), header.user.Limit)
 				}
 
-				determiner := "a"
+				determiner := "一名"
 				if header.countThisRun > 1 {
-					determiner = "some"
+					determiner = "一些"
 					header.headerType = pluralizer.Plural(header.headerType)
 				}
 
@@ -178,10 +178,10 @@ func SendMessageQueue(w *mwclient.Client) {
 				))
 
 				if len(messages) > 1 && index != len(messages)-1 {
-					summarySentListBuilder.WriteString(", ")
+					summarySentListBuilder.WriteString("、")
 					if index == len(messages)-2 {
 						// penultimate
-						summarySentListBuilder.WriteString("and ")
+						summarySentListBuilder.WriteString("以及")
 					}
 				}
 				index++
@@ -204,7 +204,7 @@ func SendMessageQueue(w *mwclient.Client) {
 				"redirect":     "true",
 			})
 			if err == nil {
-				log.Println("Successfully invited", user, "to give feedback on", len(messages), "requesting items")
+				log.Println("已邀请", user, "为", len(messages), "项请求提供反馈")
 				time.Sleep(5 * time.Second)
 			} else {
 				switch err.(type) {

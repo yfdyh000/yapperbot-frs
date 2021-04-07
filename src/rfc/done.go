@@ -92,7 +92,7 @@ func SaveRfcsDone(w *mwclient.Client) {
 		ybtools.NoMaxlagDo(func() (err error) {
 			err = w.Edit(params.Values{
 				"pageid":  yapperconfig.Config.RFCsDonePageID,
-				"summary": "Updating list of completed RfCs",
+				"summary": "更新已完成的请求评论",
 				"bot":     "true",
 				"text":    rfcsDoneJSONBuilder.String(),
 			})
