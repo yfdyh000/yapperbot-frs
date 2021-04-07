@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 	"yapperbot-frs/src/frslist"
-	"yapperbot-frs/src/ga"
+	//"yapperbot-frs/src/ga"
 	"yapperbot-frs/src/messages"
 	"yapperbot-frs/src/rfc"
 	"yapperbot-frs/src/yapperconfig"
