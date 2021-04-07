@@ -20,7 +20,7 @@ package frslist
 
 import (
 	"github.com/antonholmquist/jason"
-	"github.com/mashedkeyboard/ybtools/v2"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // deserializeSentCount takes a jason JSON object containing the SentCount.json

@@ -31,7 +31,7 @@ import (
 	"cgt.name/pkg/go-mwclient"
 	"cgt.name/pkg/go-mwclient/params"
 	"github.com/gertd/go-pluralize"
-	"github.com/mashedkeyboard/ybtools/v2"
+	"github.com/mashedkeyboard/ybtools"
 )
 
 // A Message object represents a single message which might be sent to a user.
