@@ -24,7 +24,7 @@ import "regexp"
 // these are in the form <!--rfc:categoryname-->, and mean the bot can match it.
 var rfcPrefixRegex *regexp.Regexp
 
-const requestType string = "request for comment"
+const requestType string = "请求评论"
 
 // An RfC has an id, a categories map and a setting for whether feedback has been given for it.
 // The map should be map[string]bool, with bool as true for every element

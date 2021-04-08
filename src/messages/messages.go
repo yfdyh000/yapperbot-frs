@@ -58,14 +58,14 @@ type headerForMessageSending struct {
 // editSummaryForFeedbackMsgs is used to generate our edit summary. We run Sprintf over it
 // with the appropriately-formatted values we get back from editSummaryMessagesComponent, joined together with
 // a limitInEditSummary formatted as necessary if the user has a limit set for the category.
-const editSummaryForFeedbackMsgs string = `[[WP:FRS|回饋請求服務]]通知于%s。如需退订请至[[WP:FRS]]。`
+const editSummaryForFeedbackMsgs string = `[[WP:FRS|回饋請求服務]]通知%s。如需退订请至[[WP:FRS]]。`
 
 // editSummaryMessagesComponent contains the core part of our edit summary. We run Sprintf over it with:
 // %s 1: determiner "a" or "some" depending on if we have plural
 // %s 2: header the user was subscribed to
 // %s 3: the type of request (GA nom, RfC, etc), pluralised if necessary
 // %s 4: limitInEditSummary, or empty string for no limit
-const editSummaryMessagesComponent string = `%s "%s" %s%s`
+const editSummaryMessagesComponent string = `%s有关“%s”的%s%s`
 
 // limitInEditSummary is used where users have a limit set.
 // Sprintf is run over it with the first param as the used amount, and the second as the limit.
@@ -163,9 +163,9 @@ func SendMessageQueue(w *mwclient.Client) {
 					limitsummary = fmt.Sprintf(limitInEditSummary, header.user.GetCount(), header.user.Limit)
 				}
 
-				determiner := "一名"
+				determiner := "一则"
 				if header.countThisRun > 1 {
-					determiner = "一些"
+					determiner = "多则"
 					header.headerType = pluralizer.Plural(header.headerType)
 				}
 
