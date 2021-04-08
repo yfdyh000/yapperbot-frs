@@ -148,7 +148,7 @@ func SendMessageQueue(w *mwclient.Client) {
 		var sectiontitle string
 		if len(messages) == 1 {
 			cleanedHeader := cleanedHeaders[messages[0].User.Header]
-			sectiontitle = fmt.Sprintf("请求反馈：%s %s", cleanedHeader, messages[0].Type)
+			sectiontitle = fmt.Sprintf("%s：%s", messages[0].Type, cleanedHeader)
 		} else {
 			sectiontitle = "回饋請求服務来信"
 		}
